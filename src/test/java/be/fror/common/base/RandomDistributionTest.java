@@ -50,6 +50,11 @@ public class RandomDistributionTest {
   public static void tearDownClass() {
   }
 
+  private static final int DEFAULT_RUNS = 100000;
+  
+  // Allow 1% deviation
+  private static final double DEFAULT_EPSILON = 0.01;
+
   private RandomDistribution instance;
 
   @Before
@@ -74,7 +79,7 @@ public class RandomDistributionTest {
    */
   @Test
   public void testUniform_0args() {
-    for (int i = 0; i < 10000; i++) {
+    for (int i = 0; i < DEFAULT_RUNS; i++) {
       assertThat(instance.uniform(), inRangeClosedOpen(0.0, 1.0));
     }
   }
@@ -84,7 +89,7 @@ public class RandomDistributionTest {
    */
   @Test
   public void testUniform_int() {
-    for (int i = 0; i < 10000; i++) {
+    for (int i = 0; i < DEFAULT_RUNS; i++) {
       assertThat(instance.uniform(1), is(0));
       assertThat(instance.uniform(2), is(inRangeClosedOpen(0, 2)));
       assertThat(instance.uniform(10), is(inRangeClosedOpen(0, 10)));
@@ -96,7 +101,7 @@ public class RandomDistributionTest {
    */
   @Test
   public void testUniform_int_int() {
-    for (int i = 0; i < 10000; i++) {
+    for (int i = 0; i < DEFAULT_RUNS; i++) {
       assertThat(instance.uniform(10, 11), is(10));
       assertThat(instance.uniform(10, 12), is(inRangeClosedOpen(10, 12)));
       assertThat(instance.uniform(10, 20), is(inRangeClosedOpen(10, 20)));
@@ -108,7 +113,7 @@ public class RandomDistributionTest {
    */
   @Test
   public void testUniform_double_double() {
-    for (int i = 0; i < 10000; i++) {
+    for (int i = 0; i < DEFAULT_RUNS; i++) {
       assertThat(instance.uniform(-1.0d, 1.0d), inRangeClosedOpen(-1.0d, 1.0d));
     }
   }
@@ -119,9 +124,9 @@ public class RandomDistributionTest {
   @Test
   public void testBernoulli_double() {
 
-    int runs = 10000;
+    int runs = DEFAULT_RUNS;
     double distribution = 0.1;
-    double epsilon = 0.1;
+    double epsilon = DEFAULT_EPSILON;
 
     int count = 0;
     for (int i = 0; i < runs; i++) {
@@ -138,8 +143,8 @@ public class RandomDistributionTest {
   @Test
   public void testBernoulli_0args() {
 
-    int runs = 10000;
-    double epsilon = 0.1;
+    int runs = DEFAULT_RUNS;
+    double epsilon = DEFAULT_EPSILON;
 
     int count = 0;
     for (int i = 0; i < runs; i++) {
