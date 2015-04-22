@@ -15,8 +15,8 @@
  */
 package be.fror.common.base;
 
-import static be.fror.common.base.Preconditions.checkArgument;
-import static be.fror.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Math.PI;
 import static java.lang.Math.abs;
 import static java.lang.Math.ceil;
