@@ -141,7 +141,7 @@ public final class ResourceLocator {
   }
   
   private static final CharMatcher REGEX_META = CharMatcher.anyOf(".^$+{[]|()");
-  private static final CharMatcher GLOB_META = CharMatcher.anyOf("\\*?[{");
+  private static final CharMatcher GLOB_META = CharMatcher.anyOf("\\*?{");
   
   private static char nextChar(String pattern, int pos) {
     if (pos < pattern.length()) {
