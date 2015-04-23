@@ -17,96 +17,80 @@ package be.fror.common.resource;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.Spliterator.ORDERED;
-import static java.util.Spliterators.spliteratorUnknownSize;
-import static java.util.stream.StreamSupport.stream;
+import static java.nio.file.Files.isDirectory;
+import static java.util.Arrays.asList;
+import static java.util.stream.Collectors.toCollection;
 
-import com.google.common.collect.AbstractIterator;
+import com.google.common.base.CharMatcher;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.reflect.ClassPath;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.jar.JarFile;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import java.util.stream.Stream;
 
 /**
  *
  * @author Olivier Grégoire &lt;https://github.com/fror&gt;
  */
-public class ResourceLocator {
-
-  private final ImmutableSet<URL> urls;
-
-  private ResourceLocator(Builder builder) {
-    this.urls = ImmutableSet.copyOf(builder.urls);
+public final class ResourceLocator {
+  
+  private static final ImmutableSet<String> supportedProtocols = ImmutableSet.of("file", "jar");
+  private final ImmutableSet<ClassPath.ResourceInfo> resources;
+  
+  private ResourceLocator(ImmutableSet<ClassPath.ResourceInfo> resources) {
+    this.resources = resources;
   }
-
+  
   public Stream<URL> locateResource(String uri) {
     checkNotNull(uri);
     return doLocateResource((name) -> uri.equals(name));
   }
-
+  
   public Stream<URL> locateResourceMatching(String pattern) {
     checkNotNull(pattern);
-    Pattern p = Pattern.compile(Glob.toRegexPattern(pattern));
+    Pattern p = Pattern.compile(globToRegex(pattern));
     return doLocateResource((name) -> p.matcher(name).matches());
   }
-
+  
   public Stream<URL> locateResource(Predicate<String> namePredicate) {
     checkNotNull(namePredicate);
     return doLocateResource(namePredicate);
   }
-
+  
   private Stream<URL> doLocateResource(Predicate<String> namePredicate) {
-    Iterator<URL> iterator = new ResourceLocatorIterator(namePredicate);
-    return stream(spliteratorUnknownSize(iterator, ORDERED), false);
+    return this.resources.stream()
+        .filter(r -> namePredicate.test(r.getResourceName()))
+        .map(r -> r.url());
   }
-
-  private class ResourceLocatorIterator extends AbstractIterator<URL> {
-
-    private final Predicate<String> predicate;
-
-    private ResourceLocatorIterator(Predicate<String> predicate) {
-      this.predicate = predicate;
-    }
-
-    @Override
-    protected URL computeNext() {
-      return null;
-    }
-  }
-
+  
   public static class Builder {
 
     // Order matters? Let's assume yes.
     private final Set<URL> urls = new LinkedHashSet<>();
-
+    
     public Builder() {
     }
-
+    
     public Builder addClassLoader(URLClassLoader classLoader) {
       checkNotNull(classLoader, "classLoader must not be null");
-      Set<URL> localUrls = new LinkedHashSet<>();
-      for (URL url : classLoader.getURLs()) {
-        String protocol = url.getProtocol();
-        if ("jar".equals(protocol) || "file".equals(protocol)) {
-          localUrls.add(url);
-        }
-      }
+      Set<URL> localUrls = asList(classLoader.getURLs()).stream()
+          .filter((url) -> supportedProtocols.contains(url.getProtocol()))
+          .collect(toCollection(LinkedHashSet::new));
       checkArgument(!localUrls.isEmpty(), "No URL in URLClassLoader are usable");
       this.urls.addAll(localUrls);
       return this;
     }
-
+    
     public Builder addJar(Path jarSource) {
       checkNotNull(jarSource);
       try {
@@ -114,7 +98,7 @@ public class ResourceLocator {
         URL url = jarSource.toUri().toURL();
         try {
           url = new URL("jar", "", -1, url.toString() + "!/");
-        } catch (MalformedURLException e) {
+        } catch (MalformedURLException unused) {
         }
         this.urls.add(url);
       } catch (IOException unused) {
@@ -122,10 +106,10 @@ public class ResourceLocator {
       }
       return this;
     }
-
+    
     public Builder addDirectory(Path directorySource) {
       checkNotNull(directorySource);
-      checkArgument(Files.isDirectory(directorySource), "directorySource is not a directory");
+      checkArgument(isDirectory(directorySource), "directorySource is not a directory");
       try {
         this.urls.add(directorySource.toUri().toURL());
       } catch (IOException unused) {
@@ -133,9 +117,103 @@ public class ResourceLocator {
       }
       return this;
     }
-
-    public ResourceLocator build() {
-      return new ResourceLocator(this);
+    
+    public ResourceLocator build() throws IOException {
+      // TODO rewrite so that ClassPath is not used (because it loads the parents by default).
+      URL[] urlArray = this.urls.toArray(new URL[this.urls.size()]);
+      URLClassLoader classLoader = new URLClassLoader(urlArray, null);
+      ImmutableSet<ClassPath.ResourceInfo> resources = ImmutableSet.copyOf(
+          ClassPath.from(classLoader).getResources().stream()
+          .filter(ri -> isResourceInfoUrlCorrect(ri))
+          .iterator()
+      );
+      return new ResourceLocator(resources);
     }
+    
+    private static boolean isResourceInfoUrlCorrect(ClassPath.ResourceInfo ri) {
+      try {
+        ri.url();
+        return true;
+      } catch (NullPointerException e) {
+        return false;
+      }
+    }
+  }
+  
+  private static final CharMatcher REGEX_META = CharMatcher.anyOf(".^$+{[]|()");
+  private static final CharMatcher GLOB_META = CharMatcher.anyOf("\\*?[{");
+  
+  private static char nextChar(String pattern, int pos) {
+    if (pos < pattern.length()) {
+      return pattern.charAt(pos);
+    }
+    return '\0';
+  }
+  
+  private static String globToRegex(String glob) {
+    boolean inGroup = false;
+    StringBuilder regex = new StringBuilder("^");
+    final int length = glob.length();
+    int index = 0;
+    while (index < length) {
+      char c = glob.charAt(index++);
+      switch (c) {
+        case '\\':
+          if (index == length) {
+            throw new PatternSyntaxException("No character to escape", glob, index - 1);
+          }
+          char next = glob.charAt(index++);
+          if (GLOB_META.matches(next) || REGEX_META.matches(next)) {
+            regex.append('\\');
+          }
+          regex.append(next);
+          break;
+        case '/':
+          regex.append(c);
+          break;
+        case '{':
+          if (inGroup) {
+            throw new PatternSyntaxException("Cannot nest groups", glob, index - 1);
+          }
+          regex.append("(?:(?:");
+          inGroup = true;
+          break;
+        case '}':
+          if (inGroup) {
+            regex.append("))");
+            inGroup = false;
+          } else {
+            regex.append('}');
+          }
+          break;
+        case ',':
+          if (inGroup) {
+            regex.append(")|(?:");
+          } else {
+            regex.append(',');
+          }
+          break;
+        case '*':
+          if (nextChar(glob, index) == '*') {
+            regex.append(".*");
+            index++;
+          } else {
+            regex.append("[^/]*");
+          }
+          break;
+        case '?':
+          regex.append("[^/]");
+          break;
+        default:
+          if (REGEX_META.matches(c)) {
+            regex.append('\\');
+          }
+          regex.append(c);
+      }
+    }
+    if (inGroup) {
+      throw new PatternSyntaxException("Missing '}", glob, index - 1);
+    }
+    return regex.append('$').toString();
   }
 }
