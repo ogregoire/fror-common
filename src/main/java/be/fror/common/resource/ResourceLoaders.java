@@ -19,15 +19,13 @@ import com.google.common.io.ByteSource;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  *
  * @author Olivier Grégoire &lt;https://github.com/ogregoire&gt;
  */
-public class ResourceLoaders {
+public final class ResourceLoaders {
 
   private ResourceLoaders() {
   }
@@ -61,15 +59,13 @@ public class ResourceLoaders {
         };
   }
 
-  private static final Map<Charset, ResourceLoader<Properties>> charsetPropertiesLoader = new ConcurrentHashMap<>();
-
   public static ResourceLoader<Properties> propertiesLoader(Charset charset) {
-    return charsetPropertiesLoader.computeIfAbsent(charset, (c) -> new CharsetPropertiesLoader(c));
+    return new CharsetPropertiesLoader(charset);
   }
 
   private static class CharsetPropertiesLoader implements ResourceLoader<Properties> {
 
-    private Charset charset;
+    private final Charset charset;
 
     private CharsetPropertiesLoader(Charset charset) {
       this.charset = charset;
