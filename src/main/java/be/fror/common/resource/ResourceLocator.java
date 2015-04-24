@@ -32,8 +32,8 @@ import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.FileSystem;
 import java.nio.file.Path;
-import java.nio.file.PathMatcher;
 import java.util.LinkedHashSet;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -62,11 +62,14 @@ public final class ResourceLocator {
    * <p>
    * Pattern definition:
    * <ul>
-   *  <li>Follow the rules of {@link PathMatcher}</li>
+   *  <li>Follow the rules of {@link FileSystem#getPathMatcher(java.lang.String) }</li>
    *  <li>remove the "glob:" prefix</li>
    *  <li>regex is not supported</li>
    *  <li>glob's exact list and ranges are not supported</li>
    * </ul>
+   * 
+   * <p>
+   * <b>Note:</b> the resource names don't start with a <tt>'/'</tt>.
    * 
    * <p>
    * Example of usage:
