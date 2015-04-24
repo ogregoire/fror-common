@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
  *
  * @author Olivier Grégoire &lt;https://github.com/ogregoire&gt;
  */
-public class MoreStrings {
+public final class MoreStrings {
 
   private MoreStrings() {
   }

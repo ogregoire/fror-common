@@ -31,7 +31,7 @@ import java.util.Random;
  *
  * @author Olivier Grégoire &lt;https://github.com/ogregoire&gt;
  */
-public class RandomDistribution {
+public final class RandomDistribution {
 
   /**
    *
