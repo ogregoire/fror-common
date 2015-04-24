@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Olivier Grégoire <https://github.com/fror>.
+ * Copyright 2015 Olivier Grégoire <https://github.com/ogregoire>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import java.util.regex.Pattern;
 
 /**
  *
- * @author Olivier Grégoire &lt;https://github.com/fror&gt;
+ * @author Olivier Grégoire &lt;https://github.com/ogregoire&gt;
  */
 public class MoreStrings {
 
