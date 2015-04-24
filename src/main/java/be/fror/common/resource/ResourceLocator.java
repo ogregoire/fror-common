@@ -66,7 +66,7 @@ public final class ResourceLocator {
    * <li>Follow the rules of {@link FileSystem#getPathMatcher(java.lang.String) }</li>
    * <li>remove the "glob:" prefix</li>
    * <li>regex is not supported</li>
-   * <li>glob's exact list and ranges are not supported</li>
+   * <li>brackets expressions are not supported</li>
    * </ul>
    *
    * <p>
