@@ -21,8 +21,10 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 
 /**
+ * Loads resource from {@link ByteSource}.
  *
  * @author Olivier Grégoire &lt;https://github.com/ogregoire&gt;
+ * @param <T> The type of the resource being loaded
  */
 public interface ResourceLoader<T> {
 
@@ -41,10 +43,10 @@ public interface ResourceLoader<T> {
    * }</code>
    * </pre>
    * 
-   * @param <T>
-   * @param source
-   * @return
-   * @throws UncheckedIOException
+   * @param <T> the type of the resource being loaded
+   * @param source the source to load the resource from
+   * @return the resource
+   * @throws UncheckedIOException if any issue happens. Wraps an <tt>IOException</tt>
    */
   public default <T> T uncheckedLoad(ByteSource source) throws UncheckedIOException {
     try {
@@ -55,11 +57,12 @@ public interface ResourceLoader<T> {
   }
 
   /**
+   * Loads a resource from <tt>source</tt>.
    * 
-   * @param <T>
-   * @param source
-   * @return
-   * @throws IOException 
+   * @param <T> the type of the resource being loaded
+   * @param source the source to load the resource from
+   * @return the resource
+   * @throws IOException if any issue happens
    */
   public <T> T load(ByteSource source) throws IOException;
 

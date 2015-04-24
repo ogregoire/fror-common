@@ -33,6 +33,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.util.LinkedHashSet;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -55,6 +56,31 @@ public final class ResourceLocator {
     this.resources = resources;
   }
 
+  /**
+   * Locates resources matching the glob-pattern <tt>pattern</tt>.
+   * 
+   * <p>
+   * Pattern definition:
+   * <ul>
+   *  <li>Follow the rules of {@link PathMatcher}</li>
+   *  <li>remove the "glob:" prefix</li>
+   *  <li>regex is not supported</li>
+   *  <li>glob's exact list and ranges are not supported</li>
+   * </ul>
+   * 
+   * <p>
+   * Example of usage:
+   * 
+   * <pre>
+   * <code>locateResources("**&#47;*.properties") // Finds any resource whose name ends with ".properties".
+   * locateResources("**&#47;*.{java,class}") // Finds any resource whose name ends with ".java" or ".class".
+   * locateResources("**&#47;*.???") // Finds any resource whose name ends with a dot then three characters.
+   * </code>
+   * </pre>
+   * 
+   * @param pattern
+   * @return 
+   */
   public Stream<URL> locateResources(String pattern) {
     checkNotNull(pattern);
     Pattern p = Pattern.compile(globToRegex(pattern));

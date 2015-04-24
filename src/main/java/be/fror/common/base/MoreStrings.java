@@ -15,10 +15,13 @@
  */
 package be.fror.common.base;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.text.Normalizer;
 import java.util.regex.Pattern;
 
 /**
+ * Tools for String that are not present in Guava.
  *
  * @author Olivier Grégoire &lt;https://github.com/ogregoire&gt;
  */
@@ -30,15 +33,22 @@ public final class MoreStrings {
   private static final Pattern MULTIPLE_IN_COMBINING_DIACRITICAL_MARKS_PATTERN = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
 
   /**
+   * Removes diacritical marks from strings.
    *
+   * <p>
+   * Examples:
+   * <pre>
+   * <code>String cote = MoreStrings.removeDiacriticalMarks("côté"); // returns "cote"
+   * String espana = MoreStrings.removeDiacriticalMarks("España"); // returns "espana"
+   * String muller = MoreStrings.removeDiacriticalMarks("Müller"); // returns "muller", not "mueller"
+   * </code>
+   * </pre>
    *
    * @param str
    * @return
    */
   public static String removeDiacriticalMarks(String str) {
-    if (str == null) {
-      throw new NullPointerException("str must not be null");
-    }
+    checkNotNull(str, "str must not be null");
     String nfdNormalizedString = Normalizer.normalize(str, Normalizer.Form.NFKD);
     return MULTIPLE_IN_COMBINING_DIACRITICAL_MARKS_PATTERN.matcher(nfdNormalizedString).replaceAll("");
   }

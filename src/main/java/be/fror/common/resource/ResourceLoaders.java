@@ -22,6 +22,7 @@ import java.nio.charset.Charset;
 import java.util.Properties;
 
 /**
+ * Tools for {@link ResourceLoader}, including static factory methods.
  *
  * @author Olivier Grégoire &lt;https://github.com/ogregoire&gt;
  */
@@ -30,10 +31,22 @@ public final class ResourceLoaders {
   private ResourceLoaders() {
   }
 
+  /**
+   * Returns a <tt>ResourceLoader</tt> able to load {@link Properties} using {@link Properties#load(java.io.InputStream)
+   * }
+   *
+   * @return
+   */
   public static ResourceLoader<Properties> propertiesLoader() {
     return StandardPropertiesLoader.PROPERTIES;
   }
 
+  /**
+   * Returns a <tt>ResourceLoader</tt> able to load {@link Properties} using {@link Properties#loadFromXML(java.io.InputStream)
+   * }
+   *
+   * @return
+   */
   public static ResourceLoader<Properties> xmlPropertiesLoader() {
     return StandardPropertiesLoader.XML;
   }
@@ -59,6 +72,13 @@ public final class ResourceLoaders {
         };
   }
 
+  /**
+   * Returns a <tt>ResourceLoader</tt> able to load {@link Properties} using {@link Properties#load(java.io.Reader)
+   * }
+   *
+   * @param charset the charset to use while loading properties
+   * @return
+   */
   public static ResourceLoader<Properties> propertiesLoader(Charset charset) {
     return new CharsetPropertiesLoader(charset);
   }
