@@ -57,32 +57,33 @@ public final class ResourceLocator {
   }
 
   /**
-   * Locates resources matching the glob-pattern <tt>pattern</tt>.
-   * 
+   * Locates resources matching the glob-pattern <tt>pattern</tt>. Resources are "folder-separated"
+   * with <tt>/</tt>.
+   *
    * <p>
    * Pattern definition:
    * <ul>
-   *  <li>Follow the rules of {@link FileSystem#getPathMatcher(java.lang.String) }</li>
-   *  <li>remove the "glob:" prefix</li>
-   *  <li>regex is not supported</li>
-   *  <li>glob's exact list and ranges are not supported</li>
+   * <li>Follow the rules of {@link FileSystem#getPathMatcher(java.lang.String) }</li>
+   * <li>remove the "glob:" prefix</li>
+   * <li>regex is not supported</li>
+   * <li>glob's exact list and ranges are not supported</li>
    * </ul>
-   * 
+   *
    * <p>
    * <b>Note:</b> the resource names don't start with a <tt>'/'</tt>.
-   * 
+   *
    * <p>
    * Example of usage:
-   * 
+   *
    * <pre>
    * <code>locateResources("**&#47;*.properties") // Finds any resource whose name ends with ".properties".
    * locateResources("**&#47;*.{java,class}") // Finds any resource whose name ends with ".java" or ".class".
    * locateResources("**&#47;*.???") // Finds any resource whose name ends with a dot then three characters.
    * </code>
    * </pre>
-   * 
+   *
    * @param pattern
-   * @return 
+   * @return
    */
   public Stream<URL> locateResources(String pattern) {
     checkNotNull(pattern);
