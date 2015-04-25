@@ -73,7 +73,7 @@ public final class RandomWeightedSelection<T> {
   }
 
   public T next(Random random) {
-    return this.elements[algorithm.next(random)];
+    return this.elements[this.algorithm.next(random)];
   }
 
 }

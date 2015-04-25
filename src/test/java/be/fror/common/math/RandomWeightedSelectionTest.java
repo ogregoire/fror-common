@@ -15,15 +15,18 @@
  */
 package be.fror.common.math;
 
+import static org.hamcrest.Matchers.closeTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
 import com.google.common.collect.ImmutableMultiset;
+import com.google.common.collect.Multiset;
+import com.google.common.collect.TreeMultiset;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import com.google.common.collect.Multiset;
-import com.google.common.collect.TreeMultiset;
 
 import java.util.Random;
 
@@ -57,21 +60,27 @@ public class RandomWeightedSelectionTest {
    */
   @Test
   public void testNext() {
-    RandomWeightedSelection<String> selection2 = RandomWeightedSelection.from(ImmutableMultiset.<String>builder()
+    
+    ImmutableMultiset<String> weightedElements = ImmutableMultiset.<String>builder()
         .addCopies("a", 4)
         .addCopies("b", 3)
         .addCopies("c", 12)
         .addCopies("d", 1)
-        .build()
-    );
-
-    Random random2 = new Random(0);
-    Multiset<String> result2 = TreeMultiset.create();
+        .build();
+    Random random = new Random(0);
+    
+    RandomWeightedSelection<String> selection = RandomWeightedSelection.from(weightedElements);
+    Multiset<String> selectedElements = TreeMultiset.create();
     for (int i = 0; i < 100000; i++) {
-      result2.add(selection2.next(random2));
+      selectedElements.add(selection.next(random));
     }
-    System.out.println(result2);
 
+    for (Multiset.Entry<String> entry: weightedElements.entrySet()) {
+      double expectedRatio = (double)entry.getCount() / weightedElements.size();
+      double actualRatio = (double)selectedElements.count(entry.getElement()) / selectedElements.size();
+      assertThat(actualRatio, is(closeTo(expectedRatio, 0.01)));
+    }
+    
   }
 
 }
