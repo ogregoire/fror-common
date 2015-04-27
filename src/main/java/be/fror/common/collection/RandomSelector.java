@@ -105,8 +105,9 @@ public final class RandomSelector<T> {
    * become closed and free the resources it's been using.
    *
    * <p>
-   * Even though this instance is thread-safe, it is preferred to use a Random per thread as noted
-   * in {@link Random } for performance reasons.
+   * Even though this instance is thread-safe and for performance reasons, it is recommended to use
+   * a different stream per thread given that Random has performance drawbacks in multi-threaded
+   * environments.
    *
    * @param random
    * @return
