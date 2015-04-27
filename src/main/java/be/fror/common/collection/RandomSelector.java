@@ -151,8 +151,7 @@ public final class RandomSelector<T> {
     RandomWeightedSelection(double[] probabilities) {
       final int size = probabilities.length;
 
-      // Defensive copy, though it's not really necessary as long this class stays package private
-      probabilities = Arrays.copyOf(probabilities, size);
+      // No defensive copy yet.
 
       final double average = 1d / size;
       final int[] small = new int[size];
