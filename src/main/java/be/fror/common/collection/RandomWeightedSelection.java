@@ -17,12 +17,17 @@ package be.fror.common.collection;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Spliterator.ORDERED;
+import static java.util.Spliterators.spliteratorUnknownSize;
 
 import com.google.common.collect.Multiset;
 
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  *
@@ -68,6 +73,30 @@ public final class RandomWeightedSelection<T> {
 
   public T next(Random random) {
     return this.elements[this.algorithm.next(random)];
+  }
+
+  public Stream<T> stream(Random random) {
+    checkNotNull(random, "random must not be null");
+    return StreamSupport.stream(spliteratorUnknownSize(new BaseIterator(random), ORDERED), false);
+  }
+
+  private class BaseIterator implements Iterator<T> {
+
+    private final Random random;
+
+    BaseIterator(Random random) {
+      this.random = random;
+    }
+
+    @Override
+    public boolean hasNext() {
+      return true;
+    }
+
+    @Override
+    public T next() {
+      return RandomWeightedSelection.this.next(random);
+    }
   }
 
   private static class VoseAliasMethod implements Algorithm {
