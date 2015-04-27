@@ -83,11 +83,11 @@ public final class RandomSelector<T> {
   }
 
   private final T[] elements;
-  private final Selection algorithm;
+  private final Selection selection;
 
-  RandomSelector(final T[] elements, final Selection algorithm) {
+  RandomSelector(final T[] elements, final Selection selection) {
     this.elements = elements;
-    this.algorithm = algorithm;
+    this.selection = selection;
   }
 
   /**
@@ -97,7 +97,7 @@ public final class RandomSelector<T> {
    * @return
    */
   public T next(final Random random) {
-    return this.elements[this.algorithm.next(random)];
+    return this.elements[this.selection.next(random)];
   }
 
   /**
