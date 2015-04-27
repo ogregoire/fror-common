@@ -40,7 +40,14 @@ import javax.annotation.concurrent.ThreadSafe;
 @ThreadSafe
 public final class RandomSelector<T> {
 
-  public static <T> RandomSelector uniform(Collection<T> collection) {
+  /**
+   * Creates a new random selector based on a uniform distribution.
+   *
+   * @param <T>
+   * @param collection
+   * @return
+   */
+  public static <T> RandomSelector uniform(final Collection<T> collection) {
     checkNotNull(collection, "collection must not be null");
     checkArgument(!collection.isEmpty(), "collection must not be empty");
 
@@ -50,7 +57,14 @@ public final class RandomSelector<T> {
     return new RandomSelector<>(elements, (r) -> r.nextInt(size));
   }
 
-  public static <T> RandomSelector weighted(Multiset<T> probabilities) {
+  /**
+   * Creates a new random selector based on a weighted distribution.
+   *
+   * @param <T>
+   * @param probabilities
+   * @return
+   */
+  public static <T> RandomSelector weighted(final Multiset<T> probabilities) {
     checkNotNull(probabilities, "probabilities must not be null");
     checkArgument(!probabilities.isEmpty(), "probabilities must not be empty");
 
@@ -65,22 +79,39 @@ public final class RandomSelector<T> {
       discreteProbabilities[i] = entry.getCount() / totalSize;
       i++;
     }
-    return new RandomSelector<>(elements, new VoseAliasMethod(discreteProbabilities));
+    return new RandomSelector<>(elements, new RandomWeightedSelection(discreteProbabilities));
   }
 
   private final T[] elements;
-  private final Algorithm algorithm;
+  private final Selection algorithm;
 
-  RandomSelector(T[] elements, Algorithm algorithm) {
+  RandomSelector(final T[] elements, final Selection algorithm) {
     this.elements = elements;
     this.algorithm = algorithm;
   }
 
-  public T next(Random random) {
+  /**
+   * Returns the next element using <tt>random</tt>.
+   *
+   * @param random
+   * @return
+   */
+  public T next(final Random random) {
     return this.elements[this.algorithm.next(random)];
   }
 
-  public Stream<T> stream(Random random) {
+  /**
+   * Returns a stream of elements using <tt>random</tt>. The stream must use a terminal operation to
+   * become closed and free the resources it's been using.
+   *
+   * <p>
+   * Even though this instance is thread-safe, it is preferred to use a Random per thread as noted
+   * in {@link Random } for performance reasons.
+   *
+   * @param random
+   * @return
+   */
+  public Stream<T> stream(final Random random) {
     checkNotNull(random, "random must not be null");
     return StreamSupport.stream(spliteratorUnknownSize(new BaseIterator(random), ORDERED), false);
   }
@@ -89,7 +120,7 @@ public final class RandomSelector<T> {
 
     private final Random random;
 
-    BaseIterator(Random random) {
+    BaseIterator(final Random random) {
       this.random = random;
     }
 
@@ -104,21 +135,22 @@ public final class RandomSelector<T> {
     }
   }
 
-  static interface Algorithm {
+  static interface Selection {
 
-    int next(Random random);
+    int next(final Random random);
   }
 
-  private static class VoseAliasMethod implements Algorithm {
-    // Alias method implementation O(n)
-    // using Vose's algorithm to initialize O(1)
+  private static class RandomWeightedSelection implements Selection {
+    // Alias method implementation O(1)
+    // using Vose's algorithm to initialize O(n)
 
     private final double[] probabilities;
     private final int[] alias;
 
-    VoseAliasMethod(double[] probabilities) {
+    RandomWeightedSelection(double[] probabilities) {
       final int size = probabilities.length;
 
+      // Defensive copy, though it's not really necessary as long this class stays package private
       probabilities = Arrays.copyOf(probabilities, size);
 
       final double average = 1d / size;
@@ -161,12 +193,11 @@ public final class RandomSelector<T> {
     }
 
     @Override
-    public int next(Random random) {
+    public int next(final Random random) {
       final int column = random.nextInt(this.probabilities.length);
       return random.nextDouble() < this.probabilities[column]
           ? column
           : this.alias[column];
     }
   }
-
 }
