@@ -29,11 +29,14 @@ import java.util.Set;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import javax.annotation.concurrent.ThreadSafe;
+
 /**
  *
  * @author Olivier Grégoire &lt;https://github.com/ogregoire&gt;
  * @param <T>
  */
+@ThreadSafe
 public final class RandomWeightedSelection<T> {
 
   static interface Algorithm {
@@ -95,7 +98,7 @@ public final class RandomWeightedSelection<T> {
 
     @Override
     public T next() {
-      return RandomWeightedSelection.this.next(random);
+      return RandomWeightedSelection.this.next(this.random);
     }
   }
 

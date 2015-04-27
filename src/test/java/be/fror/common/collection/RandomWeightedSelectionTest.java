@@ -18,6 +18,8 @@ package be.fror.common.collection;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static java.util.stream.Collectors.toList;
+import static org.hamcrest.Matchers.equalTo;
 
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Multiset;
@@ -28,6 +30,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -81,6 +85,34 @@ public class RandomWeightedSelectionTest {
       assertThat(actualRatio, is(closeTo(expectedRatio, 0.01)));
     }
 
+  }
+
+  @Test
+  public void testStream() {
+
+    final long randomSeed = 0;
+    final int elements = 100_000;
+
+    ImmutableMultiset<String> weightedElements = ImmutableMultiset.<String>builder()
+        .addCopies("a", 4)
+        .addCopies("b", 3)
+        .addCopies("c", 12)
+        .addCopies("d", 1)
+        .build();
+
+    RandomWeightedSelection<String> selection = RandomWeightedSelection.from(weightedElements);
+
+    List<String> streamed = selection.stream(new Random(randomSeed))
+        .limit(elements)
+        .collect(toList());
+
+    Random random = new Random(randomSeed);
+    List<String> nexted = new ArrayList<>();
+    for (int i = 0; i < elements; i++) {
+      nexted.add(selection.next(random));
+    }
+
+    assertThat(streamed, is(equalTo(nexted)));
   }
 
 }
