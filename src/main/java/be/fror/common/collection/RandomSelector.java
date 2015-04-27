@@ -23,6 +23,7 @@ import static java.util.Spliterators.spliteratorUnknownSize;
 import com.google.common.collect.Multiset;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
@@ -37,39 +38,40 @@ import javax.annotation.concurrent.ThreadSafe;
  * @param <T>
  */
 @ThreadSafe
-public final class RandomWeightedSelection<T> {
+public final class RandomSelector<T> {
 
-  static interface Algorithm {
+  public static <T> RandomSelector uniform(Collection<T> collection) {
+    checkNotNull(collection, "collection must not be null");
+    checkArgument(!collection.isEmpty(), "collection must not be empty");
 
-    public void init(double[] probabilities);
+    final int size = collection.size();
+    final T[] elements = collection.toArray((T[]) new Object[size]);
 
-    public int next(Random random);
+    return new RandomSelector<>(elements, (r) -> r.nextInt(size));
   }
 
-  public static <T> RandomWeightedSelection<T> from(Multiset<T> probabilities) {
+  public static <T> RandomSelector weighted(Multiset<T> probabilities) {
     checkNotNull(probabilities, "probabilities must not be null");
     checkArgument(!probabilities.isEmpty(), "probabilities must not be empty");
 
-    Set<Multiset.Entry<T>> entries = probabilities.entrySet();
+    final Set<Multiset.Entry<T>> entries = probabilities.entrySet();
     final double totalSize = probabilities.size();
     final int entriesSize = entries.size();
-    T[] e = (T[]) new Object[entriesSize];
-    double[] p = new double[entriesSize];
+    final T[] elements = (T[]) new Object[entriesSize];
+    final double[] discreteProbabilities = new double[entriesSize];
     int i = 0;
     for (Multiset.Entry<T> entry : entries) {
-      e[i] = entry.getElement();
-      p[i] = entry.getCount() / totalSize;
+      elements[i] = entry.getElement();
+      discreteProbabilities[i] = entry.getCount() / totalSize;
       i++;
     }
-    Algorithm algorithm = new VoseAliasMethod();
-    algorithm.init(p);
-    return new RandomWeightedSelection<>(e, algorithm);
+    return new RandomSelector<>(elements, new VoseAliasMethod(discreteProbabilities));
   }
 
   private final T[] elements;
   private final Algorithm algorithm;
 
-  private RandomWeightedSelection(T[] elements, Algorithm algorithm) {
+  RandomSelector(T[] elements, Algorithm algorithm) {
     this.elements = elements;
     this.algorithm = algorithm;
   }
@@ -98,17 +100,23 @@ public final class RandomWeightedSelection<T> {
 
     @Override
     public T next() {
-      return RandomWeightedSelection.this.next(this.random);
+      return RandomSelector.this.next(this.random);
     }
   }
 
+  static interface Algorithm {
+
+    int next(Random random);
+  }
+
   private static class VoseAliasMethod implements Algorithm {
+    // Alias method implementation O(n)
+    // using Vose's algorithm to initialize O(1)
 
-    private double[] probabilities;
-    private int[] alias;
+    private final double[] probabilities;
+    private final int[] alias;
 
-    @Override
-    public void init(double[] probabilities) {
+    VoseAliasMethod(double[] probabilities) {
       final int size = probabilities.length;
 
       probabilities = Arrays.copyOf(probabilities, size);
@@ -127,14 +135,16 @@ public final class RandomWeightedSelection<T> {
         }
       }
 
-      this.probabilities = new double[size];
-      this.alias = new int[size];
+      double[] pr = new double[size];
+      int[] al = new int[size];
+      this.probabilities = pr;
+      this.alias = al;
 
       while (largeSize != 0 && smallSize != 0) {
-        int less = small[--smallSize];
-        int more = large[--largeSize];
-        this.probabilities[less] = probabilities[less] * size;
-        this.alias[less] = more;
+        final int less = small[--smallSize];
+        final int more = large[--largeSize];
+        pr[less] = probabilities[less] * size;
+        al[less] = more;
         probabilities[more] += probabilities[less] - average;
         if (probabilities[more] < average) {
           small[smallSize++] = more;
@@ -143,10 +153,10 @@ public final class RandomWeightedSelection<T> {
         }
       }
       while (smallSize != 0) {
-        this.probabilities[small[--smallSize]] = 1d;
+        pr[small[--smallSize]] = 1d;
       }
       while (largeSize != 0) {
-        this.probabilities[large[--largeSize]] = 1d;
+        pr[large[--largeSize]] = 1d;
       }
     }
 

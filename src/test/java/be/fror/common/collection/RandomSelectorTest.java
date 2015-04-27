@@ -38,9 +38,9 @@ import java.util.Random;
  *
  * @author Olivier Grégoire &lt;https://github.com/ogregoire&gt;
  */
-public class RandomWeightedSelectionTest {
+public class RandomSelectorTest {
 
-  public RandomWeightedSelectionTest() {
+  public RandomSelectorTest() {
   }
 
   @BeforeClass
@@ -59,11 +59,8 @@ public class RandomWeightedSelectionTest {
   public void tearDown() {
   }
 
-  /**
-   * Test of next method, of class RandomWeightedSelection.
-   */
   @Test
-  public void testNext() {
+  public void testWeighted_next() {
 
     ImmutableMultiset<String> weightedElements = ImmutableMultiset.<String>builder()
         .addCopies("a", 4)
@@ -73,10 +70,10 @@ public class RandomWeightedSelectionTest {
         .build();
     Random random = new Random(0);
 
-    RandomWeightedSelection<String> selection = RandomWeightedSelection.from(weightedElements);
+    RandomSelector<String> selector = RandomSelector.weighted(weightedElements);
     Multiset<String> selectedElements = TreeMultiset.create();
     for (int i = 0; i < 100000; i++) {
-      selectedElements.add(selection.next(random));
+      selectedElements.add(selector.next(random));
     }
 
     for (Multiset.Entry<String> entry : weightedElements.entrySet()) {
@@ -88,7 +85,7 @@ public class RandomWeightedSelectionTest {
   }
 
   @Test
-  public void testStream() {
+  public void testWeighted_stream() {
 
     final long randomSeed = 0;
     final int elements = 100_000;
@@ -100,16 +97,16 @@ public class RandomWeightedSelectionTest {
         .addCopies("d", 1)
         .build();
 
-    RandomWeightedSelection<String> selection = RandomWeightedSelection.from(weightedElements);
+    RandomSelector<String> selector = RandomSelector.weighted(weightedElements);
 
-    List<String> streamed = selection.stream(new Random(randomSeed))
+    List<String> streamed = selector.stream(new Random(randomSeed))
         .limit(elements)
         .collect(toList());
 
     Random random = new Random(randomSeed);
     List<String> nexted = new ArrayList<>();
     for (int i = 0; i < elements; i++) {
-      nexted.add(selection.next(random));
+      nexted.add(selector.next(random));
     }
 
     assertThat(streamed, is(equalTo(nexted)));
