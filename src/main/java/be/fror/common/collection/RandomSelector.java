@@ -63,20 +63,24 @@ public final class RandomSelector<T> {
   /**
    * Creates a new random selector based on a uniform distribution.
    *
+   * <p>
+   * A copy of <tt>elements</tt> is kept, so any modification to <tt>elements</tt> will not be
+   * reflected in returned values.
+   * 
    * @param <T>
-   * @param collection
+   * @param elements
    * @return
-   * @throws IllegalArgumentException if <tt>collection</tt> is empty.
+   * @throws IllegalArgumentException if <tt>elements</tt> is empty.
    */
-  public static <T> RandomSelector<T> uniform(final Collection<T> collection)
+  public static <T> RandomSelector<T> uniform(final Collection<T> elements)
       throws IllegalArgumentException {
-    checkNotNull(collection, "collection must not be null");
-    checkArgument(!collection.isEmpty(), "collection must not be empty");
+    checkNotNull(elements, "collection must not be null");
+    checkArgument(!elements.isEmpty(), "collection must not be empty");
 
-    final int size = collection.size();
-    final T[] elements = collection.toArray((T[]) new Object[size]);
+    final int size = elements.size();
+    final T[] els = elements.toArray((T[]) new Object[size]);
 
-    return new RandomSelector<>(elements, (r) -> r.nextInt(size));
+    return new RandomSelector<>(els, (random) -> random.nextInt(size));
   }
 
   /**
@@ -84,44 +88,52 @@ public final class RandomSelector<T> {
    * their number of occurrences in <tt>elements</tt>.
    *
    * <p>
+   * A copy of <tt>elements</tt> is kept, so any modification to <tt>elements</tt> will not be
+   * reflected in returned values.
+   * 
+   * <p>
    * This is actually a memory optimization of <tt>{@link #uniform(java.util.Collection) }</tt> for
    * {@link Multiset multisets}. Use <tt>{@link #uniform(java.util.Collection) }</tt> if you need a
    * faster next implementation for a worse memory usage.
    *
    * @param <T>
-   * @param probabilities
+   * @param elements
    * @return
-   * @throws IllegalArgumentException if <tt>probabilities</tt> is empty.
+   * @throws IllegalArgumentException if <tt>elements</tt> is empty.
    */
-  public static <T> RandomSelector<T> weightedByCount(final Multiset<T> probabilities)
+  public static <T> RandomSelector<T> weightedByCount(final Multiset<T> elements)
       throws IllegalArgumentException {
-    checkNotNull(probabilities, "probabilities must not be null");
-    checkArgument(!probabilities.isEmpty(), "probabilities must not be empty");
+    checkNotNull(elements, "elements must not be null");
+    checkArgument(!elements.isEmpty(), "elements must not be empty");
 
-    final Set<Multiset.Entry<T>> entries = probabilities.entrySet();
-    final double totalSize = probabilities.size();
+    final Set<Multiset.Entry<T>> entries = elements.entrySet();
+    final double totalSize = elements.size();
     final int entriesSize = entries.size();
-    final T[] elements = (T[]) new Object[entriesSize];
+    final T[] els = (T[]) new Object[entriesSize];
     final double[] discreteProbabilities = new double[entriesSize];
     int i = 0;
     for (final Multiset.Entry<T> entry : entries) {
-      elements[i] = entry.getElement();
+      els[i] = entry.getElement();
       discreteProbabilities[i] = entry.getCount() / totalSize;
       i++;
     }
-    return new RandomSelector<>(elements, new RandomWeightedSelection(discreteProbabilities));
+    return new RandomSelector<>(els, new RandomWeightedSelection(discreteProbabilities));
   }
 
   /**
    * Creates a random selector among <tt>elements</tt> where the elements have a weight defined by
    * <tt>weighter</tt>.
    *
+   * <p>
+   * A copy of <tt>elements</tt> is kept, so any modification to <tt>elements</tt> will not be
+   * reflected in returned values.
+   * 
    * @param <T>
    * @param elements
    * @param weighter
    * @return
    * @throws IllegalArgumentException if <tt>elements</tt> is empty or if <tt>weighter</tt> returns
-   * a negative value.
+   * a negative value or <tt>0</tt>.
    */
   public static <T> RandomSelector<T> weighted(
       final Collection<T> elements,
