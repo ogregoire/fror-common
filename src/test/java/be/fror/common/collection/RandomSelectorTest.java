@@ -60,7 +60,7 @@ public class RandomSelectorTest {
   }
 
   @Test
-  public void testWeighted_next() {
+  public void testWeightedByCount_next() {
 
     ImmutableMultiset<String> weightedElements = ImmutableMultiset.<String>builder()
         .addCopies("a", 4)
@@ -70,7 +70,7 @@ public class RandomSelectorTest {
         .build();
     Random random = new Random(0);
 
-    RandomSelector<String> selector = RandomSelector.weighted(weightedElements);
+    RandomSelector<String> selector = RandomSelector.weightedByCount(weightedElements);
     Multiset<String> selectedElements = TreeMultiset.create();
     for (int i = 0; i < 100000; i++) {
       selectedElements.add(selector.next(random));
@@ -85,7 +85,7 @@ public class RandomSelectorTest {
   }
 
   @Test
-  public void testWeighted_stream() {
+  public void testWeightedByCount_stream() {
 
     final long randomSeed = 0;
     final int elements = 100_000;
@@ -97,7 +97,7 @@ public class RandomSelectorTest {
         .addCopies("d", 1)
         .build();
 
-    RandomSelector<String> selector = RandomSelector.weighted(weightedElements);
+    RandomSelector<String> selector = RandomSelector.weightedByCount(weightedElements);
 
     List<String> streamed = selector.stream(new Random(randomSeed))
         .limit(elements)

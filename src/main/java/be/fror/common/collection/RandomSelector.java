@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.ToDoubleFunction;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -67,7 +68,7 @@ public final class RandomSelector<T> {
    * @return
    * @throws IllegalArgumentException if <tt>collection</tt> is empty.
    */
-  public static <T> RandomSelector uniform(final Collection<T> collection)
+  public static <T> RandomSelector<T> uniform(final Collection<T> collection)
       throws IllegalArgumentException {
     checkNotNull(collection, "collection must not be null");
     checkArgument(!collection.isEmpty(), "collection must not be empty");
@@ -79,14 +80,20 @@ public final class RandomSelector<T> {
   }
 
   /**
-   * Creates a new random selector based on a weighted distribution.
+   * Creates a random selector among <tt>elements</tt> where the elements have a weight defined by
+   * their number of occurrences in <tt>elements</tt>.
+   *
+   * <p>
+   * This is actually a memory optimization of <tt>{@link #uniform(java.util.Collection) }</tt> for
+   * {@link Multiset multisets}. Use <tt>{@link #uniform(java.util.Collection) }</tt> if you need a
+   * faster next implementation for a worse memory usage.
    *
    * @param <T>
    * @param probabilities
    * @return
    * @throws IllegalArgumentException if <tt>probabilities</tt> is empty.
    */
-  public static <T> RandomSelector weighted(final Multiset<T> probabilities)
+  public static <T> RandomSelector<T> weightedByCount(final Multiset<T> probabilities)
       throws IllegalArgumentException {
     checkNotNull(probabilities, "probabilities must not be null");
     checkArgument(!probabilities.isEmpty(), "probabilities must not be empty");
@@ -103,6 +110,40 @@ public final class RandomSelector<T> {
       i++;
     }
     return new RandomSelector<>(elements, new RandomWeightedSelection(discreteProbabilities));
+  }
+
+  /**
+   * Creates a random selector among <tt>elements</tt> where the elements have a weight defined by
+   * <tt>weighter</tt>.
+   *
+   * @param <T>
+   * @param elements
+   * @param weighter
+   * @return
+   * @throws IllegalArgumentException if <tt>elements</tt> is empty or if <tt>weighter</tt> returns
+   * a negative value.
+   */
+  public static <T> RandomSelector<T> weighted(final Collection<T> elements, ToDoubleFunction<? super T> weighter)
+      throws IllegalArgumentException {
+    checkNotNull(elements, "elements must not be null");
+    checkNotNull(weighter, "weighter must not be null");
+    checkArgument(!elements.isEmpty(), "elements must not be empty");
+
+    final int size = elements.size();
+    final T[] elementArray = elements.toArray((T[]) new Object[size]);
+
+    double totalWeight = 0d;
+    final double[] discreteProbabilities = new double[size];
+    for (int i = 0; i < size; i++) {
+      final double weight = weighter.applyAsDouble(elementArray[i]);
+      checkArgument(weight > 0d, "weighter returned a negative number");
+      discreteProbabilities[i] = weight;
+      totalWeight += weight;
+    }
+    for (int i = 0; i < size; i++) {
+      discreteProbabilities[i] /= totalWeight;
+    }
+    return new RandomSelector<>(elementArray, new RandomWeightedSelection(discreteProbabilities));
   }
 
   private final T[] elements;
