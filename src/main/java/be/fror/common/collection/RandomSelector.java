@@ -22,7 +22,6 @@ import static java.util.Spliterators.spliteratorUnknownSize;
 
 import com.google.common.collect.Multiset;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Random;
@@ -33,6 +32,26 @@ import java.util.stream.StreamSupport;
 import javax.annotation.concurrent.ThreadSafe;
 
 /**
+ * A tool to randomly select elements from collections.
+ *
+ * <p>
+ * Example usages:
+ *
+ * <pre><code>
+ * Random random = ...
+ * ImmutableMultiset&lt;String&gt; weightedStrings = ImmutableMultiset.&lt;String&gt;builder()
+ *   .addCopies("a", 4)
+ *   .addCopies("b", 3)
+ *   .addCopies("c", 12)
+ *   .addCopies("d", 1)
+ *   .build();
+ * RandomSelector&lt;String&gt; selector = RandomSelector.weighted(weightedElements);
+ * List&lt;String&gt; selection = new ArrayList&lt;&gt;();
+ * for (int i = 0; i &lt; 10; i++) {
+ *   selection.add(selector.next(random));
+ * }
+ * </code></pre>
+ *
  *
  * @author Olivier Grégoire &lt;https://github.com/ogregoire&gt;
  * @param <T>
@@ -46,8 +65,10 @@ public final class RandomSelector<T> {
    * @param <T>
    * @param collection
    * @return
+   * @throws IllegalArgumentException if <tt>collection</tt> is empty.
    */
-  public static <T> RandomSelector uniform(final Collection<T> collection) {
+  public static <T> RandomSelector uniform(final Collection<T> collection)
+      throws IllegalArgumentException {
     checkNotNull(collection, "collection must not be null");
     checkArgument(!collection.isEmpty(), "collection must not be empty");
 
@@ -63,8 +84,10 @@ public final class RandomSelector<T> {
    * @param <T>
    * @param probabilities
    * @return
+   * @throws IllegalArgumentException if <tt>probabilities</tt> is empty.
    */
-  public static <T> RandomSelector weighted(final Multiset<T> probabilities) {
+  public static <T> RandomSelector weighted(final Multiset<T> probabilities)
+      throws IllegalArgumentException {
     checkNotNull(probabilities, "probabilities must not be null");
     checkArgument(!probabilities.isEmpty(), "probabilities must not be empty");
 
@@ -74,7 +97,7 @@ public final class RandomSelector<T> {
     final T[] elements = (T[]) new Object[entriesSize];
     final double[] discreteProbabilities = new double[entriesSize];
     int i = 0;
-    for (Multiset.Entry<T> entry : entries) {
+    for (final Multiset.Entry<T> entry : entries) {
       elements[i] = entry.getElement();
       discreteProbabilities[i] = entry.getCount() / totalSize;
       i++;
@@ -148,10 +171,8 @@ public final class RandomSelector<T> {
     private final double[] probabilities;
     private final int[] alias;
 
-    RandomWeightedSelection(double[] probabilities) {
+    RandomWeightedSelection(final double[] probabilities) {
       final int size = probabilities.length;
-
-      // No defensive copy yet.
 
       final double average = 1d / size;
       final int[] small = new int[size];
@@ -167,8 +188,8 @@ public final class RandomSelector<T> {
         }
       }
 
-      double[] pr = new double[size];
-      int[] al = new int[size];
+      final double[] pr = new double[size];
+      final int[] al = new int[size];
       this.probabilities = pr;
       this.alias = al;
 
