@@ -123,7 +123,9 @@ public final class RandomSelector<T> {
    * @throws IllegalArgumentException if <tt>elements</tt> is empty or if <tt>weighter</tt> returns
    * a negative value.
    */
-  public static <T> RandomSelector<T> weighted(final Collection<T> elements, ToDoubleFunction<? super T> weighter)
+  public static <T> RandomSelector<T> weighted(
+      final Collection<T> elements,
+      final ToDoubleFunction<? super T> weighter)
       throws IllegalArgumentException {
     checkNotNull(elements, "elements must not be null");
     checkNotNull(weighter, "weighter must not be null");
