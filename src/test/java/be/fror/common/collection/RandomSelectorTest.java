@@ -15,11 +15,11 @@
  */
 package be.fror.common.collection;
 
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.closeTo;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static java.util.stream.Collectors.toList;
-import static org.hamcrest.Matchers.equalTo;
 
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Multiset;
