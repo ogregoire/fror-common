@@ -23,6 +23,9 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -34,6 +37,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  *
@@ -94,4 +98,28 @@ public class ResourceLocatorTest {
     assertThat(agot.getProperty("title"), is(equalTo("A Game of Thrones")));
   }
 
+  @Test
+  public void testLocateServices() {
+    AtomicInteger i = new AtomicInteger(0);
+    instance.getServices(TestService.class).forEach(testClass -> {
+      assertThat(testClass, isInstanceOf(TestService.class));
+      i.incrementAndGet();
+    });
+    assertThat(i.get(), is(2));
+  }
+
+  private static Matcher<Class<?>> isInstanceOf(Class<?> type) {
+    return new BaseMatcher<Class<?>>() {
+
+      @Override
+      public boolean matches(Object item) {
+        return item instanceof Class && type.isAssignableFrom((Class<?>) item);
+      }
+
+      @Override
+      public void describeTo(Description description) {
+        description.appendValue(type);
+      }
+    };
+  }
 }

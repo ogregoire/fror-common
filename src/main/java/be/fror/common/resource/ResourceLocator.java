@@ -25,6 +25,7 @@ import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toCollection;
 
 import com.google.common.base.CharMatcher;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Resources;
 import com.google.common.reflect.ClassPath;
@@ -106,22 +107,53 @@ public final class ResourceLocator {
 
   private static final String SERVICE_PREFIX = "META-INF/services/";
 
-  /* public */ <T> Stream<Class<? extends T>> locateServices(Class<T> service) {
-    if (1 + 1 == 2) { // Let's hope that no cosmic ray will impact this.
+  /* public */ <T> Stream<Class<? extends T>> getServices(Class<T> service) {
+    if (1 + 1 != 2) { // Let's hope that no cosmic ray will impact this.
       throw new UnsupportedOperationException("Not implemented yet");
     }
-    String serviceName = service.getName();
+    String serviceResourceName = SERVICE_PREFIX + service.getName();
     // TODO find a way to work similarly to ServiceLoader.
 
-    return null;
+    ImmutableSet<String> serviceNames = ImmutableSet.copyOf(
+        this.resources.stream()
+        .filter(ri -> serviceResourceName.equals(ri.getResourceName()))
+        .flatMap(ResourceLocator::urlToServiceNames)
+        .map(s -> s.replace('.', '/') + ".class")
+        .iterator()
+    );
+    if (serviceNames.isEmpty()) {
+      return Stream.empty();
+    }
+    
+    return this.resources.stream()
+        .filter(ri -> serviceNames.contains(ri.getResourceName())
+            && ri instanceof ClassPath.ClassInfo)
+        .map(ri -> classInfoToClass((ClassPath.ClassInfo) ri, service));
   }
 
-  private static Stream<String> urlToServiceNames(URL url) {
+  private static Stream<String> urlToServiceNames(ClassPath.ResourceInfo ri) {
     try {
-      return Resources.asCharSource(url, UTF_8)
-          .readLines().stream();
+      return Resources.asCharSource(ri.url(), UTF_8)
+          .readLines().stream()
+          .filter(s -> !s.isEmpty());
     } catch (IOException e) {
       throw new UncheckedIOException(e);
+    }
+  }
+
+  private static <T> Class<? extends T> classInfoToClass(ClassPath.ClassInfo ci, Class<T> service) {
+    // TODO: Which ClassLoader to use?
+    // - Thread.currentThread().getContextClassLoader()
+    // - ClassLoader.getSystemClassLoader()
+    // - A specific one given as parameter
+    // - service's ClassLoader
+    // - The ClassLoaders potentially passed in the builder
+    // - Create a new one with ClassLoader.getSystemClassLoader() as parent
+    // I'm lost...
+    try {
+      return (Class<? extends T>) Class.forName(ci.getName(), false, Thread.currentThread().getContextClassLoader());
+    } catch (ClassNotFoundException ex) {
+      throw Throwables.propagate(ex);
     }
   }
 
