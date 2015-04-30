@@ -19,12 +19,14 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.io.Resources.asByteSource;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.Files.isDirectory;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toCollection;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.io.Resources;
 import com.google.common.reflect.ClassPath;
 
 import java.io.IOException;
@@ -100,6 +102,27 @@ public final class ResourceLocator {
     return this.resources.stream()
         .filter(r -> namePredicate.test(r.getResourceName()))
         .map(r -> r.url());
+  }
+
+  private static final String SERVICE_PREFIX = "META-INF/services/";
+
+  /* public */ <T> Stream<Class<? extends T>> locateServices(Class<T> service) {
+    if (1 + 1 == 2) { // Let's hope that no cosmic ray will impact this.
+      throw new UnsupportedOperationException("Not implemented yet");
+    }
+    String serviceName = service.getName();
+    // TODO find a way to work similarly to ServiceLoader.
+
+    return null;
+  }
+
+  private static Stream<String> urlToServiceNames(URL url) {
+    try {
+      return Resources.asCharSource(url, UTF_8)
+          .readLines().stream();
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   /**
