@@ -17,6 +17,8 @@ package be.fror.common.random;
 
 import static java.lang.Math.max;
 
+import com.google.common.base.Preconditions;
+
 import java.util.Random;
 
 /**
@@ -35,8 +37,8 @@ public final class MersenneTwister extends Random {
   private static final int MASK_A = 0x9d2c5680;
   private static final int MASK_B = 0xefc60000;
 
-  private int[] mt;
-  private int mti;
+  private int[] MT;
+  private int index;
 
   public MersenneTwister() {
   }
@@ -51,23 +53,22 @@ public final class MersenneTwister extends Random {
 
   @Override
   public synchronized void setSeed(long seed) {
-    mt = new int[N];
-    mt[0] = (int) seed;
-    for (mti = 1; mti < N; mti++) {
-      mt[mti] = (0x6c078965 * (mt[mti - 1] ^ (mt[mti - 1] >>> 30)) + mti);
+    MT = new int[N];
+    MT[0] = (int) seed;
+    for (int i = 1; i < N; i++) {
+      MT[i] = (0x6c078965 * (MT[i - 1] ^ (MT[i - 1] >>> 30)) + i);
     }
+    index = N;
   }
 
   public synchronized void setSeed(int[] seed) {
-    if (seed.length == 0) {
-      throw new IllegalArgumentException("Array length must be greater than zero");
-    }
+    Preconditions.checkArgument(seed.length != 0);
     setSeed(0x12bd6aaL);
     int i = 1;
     for (int seedIndex = 0, k = max(N, seed.length); k != 0; k--) {
-      mt[i] = (mt[i] ^ ((mt[i - 1] ^ (mt[i - 1] >>> 30)) * 0x19660d)) + seed[seedIndex] + seedIndex;
+      MT[i] = (MT[i] ^ ((MT[i - 1] ^ (MT[i - 1] >>> 30)) * 0x19660d)) + seed[seedIndex] + seedIndex;
       if (++i == N) {
-        mt[0] = mt[N - 1];
+        MT[0] = MT[N - 1];
         i = 1;
       }
       if (++seedIndex == seed.length) {
@@ -75,39 +76,39 @@ public final class MersenneTwister extends Random {
       }
     }
     for (int k = N - 1; k != 0; k--) {
-      mt[i] = (mt[i] ^ ((mt[i - 1] ^ (mt[i - 1] >>> 30)) * 0x5d588b65)) - i;
+      MT[i] = (MT[i] ^ ((MT[i - 1] ^ (MT[i - 1] >>> 30)) * 0x5d588b65)) - i;
       if (++i >= N) {
-        mt[0] = mt[N - 1];
+        MT[0] = MT[N - 1];
         i = 1;
       }
     }
-    mt[0] = 0x80000000;
+    MT[0] = 0x80000000;
   }
 
   @Override
   protected int next(int bits) {
-    if (mti == N) {
-      final int[] mt = this.mt;
+    if (index == N) {
+      final int[] mt = this.MT;
       final int[] zom = ZERO_OR_MATRIX;
       final int mid = N - M;
       for (int n = 0; n < mid; n++) {
-        int tmp = (mt[n] & UPPER_MASK) | (mt[n + 1] & LOWER_MASK);
-        mt[n] = mt[n + M] ^ (tmp >>> 1) ^ zom[tmp & 0x1];
+        int y = (mt[n] & UPPER_MASK) | (mt[n + 1] & LOWER_MASK);
+        mt[n] = mt[n + M] ^ (y >>> 1) ^ zom[y & 0x1];
       }
       for (int n = mid; n < N - 1; n++) {
-        int tmp = (mt[n] & UPPER_MASK) | (mt[n + 1] & LOWER_MASK);
-        mt[n] = mt[n - mid] ^ (tmp >>> 1) ^ zom[tmp & 0x1];
+        int y = (mt[n] & UPPER_MASK) | (mt[n + 1] & LOWER_MASK);
+        mt[n] = mt[n - mid] ^ (y >>> 1) ^ zom[y & 0x1];
       }
-      int tmp = (mt[N - 1] & UPPER_MASK) | (mt[0] & LOWER_MASK);
-      mt[N - 1] = mt[M - 1] ^ (tmp >>> 1) ^ zom[tmp & 0x1];
-      mti = 0;
+      int y = (mt[N - 1] & UPPER_MASK) | (mt[0] & LOWER_MASK);
+      mt[N - 1] = mt[M - 1] ^ (y >>> 1) ^ zom[y & 0x1];
+      index = 0;
     }
-    int r = mt[mti++];
-    r ^= r >>> 11;
-    r ^= (r << 7) & MASK_A;
-    r ^= (r << 15) & MASK_B;
-    r ^= r >>> 18;
-    return r >>> (32 - bits);
+    int y = MT[index++];
+    y ^= y >>> 11;
+    y ^= (y << 7) & MASK_A;
+    y ^= (y << 15) & MASK_B;
+    y ^= y >>> 18;
+    return y >>> (32 - bits);
   }
 
 }

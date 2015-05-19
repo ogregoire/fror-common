@@ -52,13 +52,6 @@ public class MersenneTwisterTest {
   }
 
   /**
-   * Test of setSeed method, of class MersenneTwister.
-   */
-  @Test
-  public void testSetSeed() {
-  }
-
-  /**
    * Test of next method, of class MersenneTwister.
    */
   @Test
@@ -266,17 +259,11 @@ public class MersenneTwisterTest {
       2643151863L, 3896204135L, 2416995901L, 1397735321L, 3460025646L};
 
     MersenneTwister mt = new MersenneTwister();
-
-    mt.setSeed(new int[]{0x123, 0x234, 0x345, 0x456});
+    mt.setSeed(new int[]{ 0x123, 0x234, 0x345, 0x456 });
     final long MASK = (1L << 32) - 1;
     for (int i = 0; i < expected.length; i++) {
-      long value = mt.nextInt();
-      if (value < 0L) {
-        value &= MASK;
-      }
-      assertThat("" + i, value, is(equalTo(expected[i])));
+      long value = mt.nextInt() & MASK;
+      assertThat(Integer.toString(i), value, is(equalTo(expected[i])));
     }
-
   }
-
 }
