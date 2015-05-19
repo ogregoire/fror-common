@@ -17,6 +17,7 @@ package be.fror.common.resource2;
 
 import com.google.common.io.ByteSource;
 
+import java.io.UncheckedIOException;
 import java.lang.ref.SoftReference;
 import java.util.function.Supplier;
 
@@ -38,7 +39,7 @@ public final class Resource<T> implements Supplier<T>, AutoCloseable {
   }
 
   @Override
-  public T get() {
+  public T get() throws UncheckedIOException {
     T object = this.reference.get();
     if (object == null) {
       synchronized (this.lock) {
