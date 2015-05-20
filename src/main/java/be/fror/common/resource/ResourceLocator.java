@@ -61,7 +61,7 @@ public final class ResourceLocator {
 
   /**
    * Locates resources matching the glob-pattern <tt>pattern</tt>. Resources are "folder-separated"
-   * with <tt>/</tt>.
+   * with {@code /}.
    *
    * <p>
    * Pattern definition:
@@ -73,17 +73,16 @@ public final class ResourceLocator {
    * </ul>
    *
    * <p>
-   * <b>Note:</b> the resource names don't start with a <tt>'/'</tt>.
+   * <b>Note:</b> the resource names don't start with a {@code /}.
    *
    * <p>
    * Example of usage:
    *
-   * <pre>
+   * <pre>{@code
    * <code>locateResources("**&#47;*.properties") // Finds any resource whose name ends with ".properties".
    * locateResources("**&#47;*.{java,class}") // Finds any resource whose name ends with ".java" or ".class".
    * locateResources("**&#47;*.???") // Finds any resource whose name ends with a dot then three characters.
-   * </code>
-   * </pre>
+   * }</pre>
    *
    * @param pattern
    * @return

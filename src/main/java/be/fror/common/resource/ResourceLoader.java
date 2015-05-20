@@ -20,6 +20,8 @@ import com.google.common.io.ByteSource;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
+import javax.annotation.Nonnull;
+
 /**
  * Loads resource from {@link ByteSource}.
  *
@@ -29,25 +31,27 @@ import java.io.UncheckedIOException;
 public interface ResourceLoader<T> {
 
   /**
-   * Loads a resource from <tt>source</tt> but throws an {@link UncheckedIOException} instead of an
-   * {@link IOException}.
+   * Loads a resource from {@code source} but throws an {@code UncheckedIOException} instead of an
+   * {@code IOException}.
+   * 
+   * <p>
+   * This method may not return {@code null}.
    *
    * <p>
    * This method is the same as calling:
-   * 
-   * <pre>
-   * <code>try {
+   *
+   * <pre>{@code try {
    *   return this.load(source);
    * } catch (IOException ex) {
    *   throw new UncheckedIOException(ex);
-   * }</code>
-   * </pre>
-   * 
+   * }}</pre>
+   *
    * @param <T> the type of the resource being loaded
    * @param source the source to load the resource from
    * @return the resource
-   * @throws UncheckedIOException if any issue happens. Wraps an <tt>IOException</tt>
+   * @throws UncheckedIOException if any issue happens; wraps an {@code IOException}.
    */
+  @Nonnull
   public default <T> T uncheckedLoad(ByteSource source) throws UncheckedIOException {
     try {
       return this.load(source);
@@ -57,13 +61,17 @@ public interface ResourceLoader<T> {
   }
 
   /**
-   * Loads a resource from <tt>source</tt>.
-   * 
+   * Loads a resource from {@code source}.
+   *
+   * <p>
+   * This method may not return {@code null}.
+   *
    * @param <T> the type of the resource being loaded
    * @param source the source to load the resource from
    * @return the resource
    * @throws IOException if any issue happens
    */
+  @Nonnull
   public <T> T load(ByteSource source) throws IOException;
 
 }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package be.fror.common.resource2;
+package be.fror.common.resource;
 
 import com.google.common.io.ByteSource;
 
@@ -23,19 +23,26 @@ import java.util.function.Supplier;
 
 /**
  *
- * @author Olivier Grégoire <https://github.com/ogregoire>
+ * @author Olivier Grégoire &lt;https://github.com/ogregoire&gt;
+ * @param <T>
  */
-public final class Resource<T> implements Supplier<T>, AutoCloseable {
+public final class Resource<T> implements Supplier<T> {
 
   private final ByteSource source;
   private final ResourceLoader<T> loader;
-  private SoftReference<T> reference;
+
+  private volatile SoftReference<T> reference;
+
   private final Object lock = new Object();
 
   Resource(ByteSource source, ResourceLoader<T> loader) {
     this.source = source;
     this.loader = loader;
     this.reference = new SoftReference<>(null);
+  }
+
+  T load() throws UncheckedIOException {
+    return this.loader.uncheckedLoad(this.source);
   }
 
   @Override
@@ -45,18 +52,11 @@ public final class Resource<T> implements Supplier<T>, AutoCloseable {
       synchronized (this.lock) {
         object = this.reference.get();
         if (object == null) {
-          object = this.loader.uncheckedLoad(this.source);
-          this.reference = new SoftReference<>(object);
+          object = this.load();
+          this.reference = new SoftReference(object);
         }
       }
     }
     return object;
-  }
-
-  @Override
-  public void close() {
-    synchronized (this.lock) {
-      this.reference = new SoftReference<>(null);
-    }
   }
 }

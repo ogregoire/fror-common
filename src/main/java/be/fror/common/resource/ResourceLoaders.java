@@ -15,10 +15,22 @@
  */
 package be.fror.common.resource;
 
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
+import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.nio.charset.StandardCharsets.UTF_16;
+import static java.nio.charset.StandardCharsets.UTF_16BE;
+import static java.nio.charset.StandardCharsets.UTF_16LE;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.google.common.io.ByteSource;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
 import java.nio.charset.Charset;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -32,58 +44,80 @@ public final class ResourceLoaders {
   }
 
   /**
-   * Returns a <tt>ResourceLoader</tt> able to load {@link Properties} using {@link Properties#load(java.io.InputStream)
-   * }
+   * Returns a {code ResourceLoader} able to load {@link Properties} using
+   * {@link Properties#load(java.io.InputStream)}
    *
    * @return
    */
   public static ResourceLoader<Properties> propertiesLoader() {
-    return StandardPropertiesLoader.PROPERTIES;
+    return InputStreamPropertiesLoader.PROPERTIES;
   }
 
   /**
-   * Returns a <tt>ResourceLoader</tt> able to load {@link Properties} using {@link Properties#loadFromXML(java.io.InputStream)
-   * }
+   * Returns a {code ResourceLoader} able to load {@link Properties} using
+   * {@link Properties#loadFromXML(java.io.InputStream)}
    *
    * @return
    */
   public static ResourceLoader<Properties> xmlPropertiesLoader() {
-    return StandardPropertiesLoader.XML;
+    return InputStreamPropertiesLoader.XML;
   }
 
-  private enum StandardPropertiesLoader implements ResourceLoader<Properties> {
+  private static interface PropertiesLoader extends ResourceLoader<Properties> {
+
+    @Override
+    public default Properties load(ByteSource source) throws IOException {
+      Properties properties = new Properties();
+      load(properties, source);
+      return properties;
+    }
+
+    public void load(Properties properties, ByteSource source) throws IOException;
+
+  }
+
+  private enum InputStreamPropertiesLoader implements PropertiesLoader {
 
     PROPERTIES {
           @Override
-          public Properties load(ByteSource source) throws IOException {
-            Properties properties = new Properties();
-            properties.load(source.openStream());
-            return properties;
+          public void load(Properties properties, ByteSource source) throws IOException {
+            try (InputStream in = source.openStream()) {
+              properties.load(in);
+            }
           }
-
         },
     XML {
           @Override
-          public Properties load(ByteSource source) throws IOException {
-            Properties properties = new Properties();
-            properties.loadFromXML(source.openStream());
-            return properties;
+          public void load(Properties properties, ByteSource source) throws IOException {
+            try (InputStream in = source.openStream()) {
+              properties.loadFromXML(in);
+            }
           }
         };
   }
 
   /**
-   * Returns a <tt>ResourceLoader</tt> able to load {@link Properties} using {@link Properties#load(java.io.Reader)
-   * }
+   * Returns a {@code ResourceLoader} able to load {@link Properties} using
+   * {@link Properties#load(java.io.Reader)}
    *
    * @param charset the charset to use while loading properties
    * @return
    */
   public static ResourceLoader<Properties> propertiesLoader(Charset charset) {
-    return new CharsetPropertiesLoader(charset);
+    return charsetPropertiesLoaders.computeIfAbsent(charset, (c) -> new CharsetPropertiesLoader(c));
   }
 
-  private static class CharsetPropertiesLoader implements ResourceLoader<Properties> {
+  private static final Map<Charset, ResourceLoader<Properties>> charsetPropertiesLoaders;
+
+  static {
+    Map<Charset, ResourceLoader<Properties>> map = new HashMap<>();
+    for (Charset charset : Arrays.asList(US_ASCII, ISO_8859_1, UTF_8, UTF_16BE, UTF_16LE, UTF_16)) {
+      map.put(charset, new CharsetPropertiesLoader(charset));
+    }
+    charsetPropertiesLoaders = map;
+  }
+
+  private static class CharsetPropertiesLoader implements PropertiesLoader {
 
     private final Charset charset;
 
@@ -92,12 +126,10 @@ public final class ResourceLoaders {
     }
 
     @Override
-    public Properties load(ByteSource source) throws IOException {
-      Properties properties = new Properties();
-      properties.load(source.asCharSource(charset).openStream());
-      return properties;
+    public void load(Properties properties, ByteSource source) throws IOException {
+      try (Reader reader = source.asCharSource(this.charset).openStream()) {
+        properties.load(reader);
+      }
     }
-
   }
-
 }

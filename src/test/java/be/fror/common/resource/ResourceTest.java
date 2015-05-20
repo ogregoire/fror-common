@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package be.fror.common.resource2;
+package be.fror.common.resource;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
@@ -30,19 +30,23 @@ import java.io.IOException;
 
 /**
  *
- * @author Olivier Grégoire <https://github.com/ogregoire>
+ * @author Olivier Grégoire &lt;https://github.com/ogregoire&gt;
  */
 public class ResourceTest {
 
   @Test
   public void shouldCacheInstanceAndReturnIt() throws IOException {
+
+    // Given
     ResourceLoader<String> loader = mock(ResourceLoader.class);
     String abc = new String("abc"); // Force a specific address to avoid javac optimization
     when(loader.uncheckedLoad(any())).thenReturn(abc);
     when(loader.load(any())).thenReturn(abc);
 
+    // When
     Resource<String> resource = new Resource(null, loader);
 
+    // Then
     assertThat(resource.get(), is(sameInstance(abc)));
     assertThat(resource.get(), is(sameInstance(abc)));
 
