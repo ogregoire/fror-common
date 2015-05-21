@@ -18,16 +18,17 @@ package be.fror.common.resource;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Throwables.propagate;
 import static com.google.common.io.Resources.asByteSource;
+import static com.google.common.io.Resources.asCharSource;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.Files.isDirectory;
 import static java.util.Arrays.asList;
+import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toCollection;
 
 import com.google.common.base.CharMatcher;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.io.Resources;
 import com.google.common.reflect.ClassPath;
 
 import java.io.IOException;
@@ -132,7 +133,7 @@ public final class ResourceLocator {
 
   private static Stream<String> urlToServiceNames(ClassPath.ResourceInfo ri) {
     try {
-      return Resources.asCharSource(ri.url(), UTF_8)
+      return asCharSource(ri.url(), UTF_8)
           .readLines().stream()
           .filter(s -> !s.isEmpty());
     } catch (IOException e) {
@@ -152,7 +153,7 @@ public final class ResourceLocator {
     try {
       return (Class<? extends T>) Class.forName(ci.getName(), false, Thread.currentThread().getContextClassLoader());
     } catch (ClassNotFoundException ex) {
-      throw Throwables.propagate(ex);
+      throw propagate(ex);
     }
   }
 
@@ -194,17 +195,19 @@ public final class ResourceLocator {
 
     // Order matters? Let's assume yes.
     private final Set<URL> urls = new LinkedHashSet<>();
-
+    
+    private final Set<URLClassLoader> classLoaders = new LinkedHashSet<>();
+    
     public Builder() {
     }
 
     public Builder addClassLoader(URLClassLoader classLoader) {
       checkNotNull(classLoader, "classLoader must not be null");
-      Set<URL> localUrls = asList(classLoader.getURLs()).stream()
+      stream(classLoader.getURLs())
           .filter((url) -> supportedProtocols.contains(url.getProtocol()))
-          .collect(toCollection(LinkedHashSet::new));
-      checkArgument(!localUrls.isEmpty(), "No URL in URLClassLoader are usable");
-      this.urls.addAll(localUrls);
+          .findFirst()
+          .orElseThrow(() -> new IllegalArgumentException("No URL in URLClassLoader are usable"));
+      this.classLoaders.add(classLoader);
       return this;
     }
 
@@ -217,7 +220,7 @@ public final class ResourceLocator {
           url = new URL("jar", "", -1, url.toString() + "!/");
         } catch (MalformedURLException unused) {
         }
-        this.urls.add(url);
+        this.classLoaders.add(new URLClassLoader(new URL[]{url}, null));
       } catch (IOException unused) {
         checkArgument(false, "jarSource doesn't refer to a valid jar file");
       }
@@ -228,7 +231,7 @@ public final class ResourceLocator {
       checkNotNull(directorySource);
       checkArgument(isDirectory(directorySource), "directorySource is not a directory");
       try {
-        this.urls.add(directorySource.toUri().toURL());
+        this.classLoaders.add(new URLClassLoader(new URL[]{directorySource.toUri().toURL()}, null));
       } catch (IOException unused) {
         checkArgument(false, "directorySource cannot be mapped to a URL");
       }
