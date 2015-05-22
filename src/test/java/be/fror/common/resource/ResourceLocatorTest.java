@@ -92,7 +92,7 @@ public class ResourceLocatorTest {
   @Test
   public void testGetResources_String() {
     Properties agot = instance
-        .getResources("books/a_game_of_thrones.properties", propertiesLoader(UTF_8))
+        .loadResources("books/a_game_of_thrones.properties", propertiesLoader(UTF_8))
         .findFirst()
         .get();
     assertThat(agot.getProperty("title"), is(equalTo("A Game of Thrones")));
@@ -102,13 +102,13 @@ public class ResourceLocatorTest {
   public void testLocateServices() {
     AtomicInteger i = new AtomicInteger(0);
     instance.getServices(TestService.class).forEach(testClass -> {
-      assertThat(testClass, isInstanceOf(TestService.class));
+      assertThat(testClass, isAssignableFrom(TestService.class));
       i.incrementAndGet();
     });
     assertThat(i.get(), is(2));
   }
 
-  private static Matcher<Class<?>> isInstanceOf(Class<?> type) {
+  private static Matcher<Class<?>> isAssignableFrom(Class<?> type) {
     return new BaseMatcher<Class<?>>() {
 
       @Override

@@ -23,11 +23,11 @@ import static com.google.common.io.Resources.asByteSource;
 import static com.google.common.io.Resources.asCharSource;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.Files.isDirectory;
-import static java.util.Arrays.asList;
 import static java.util.Arrays.stream;
-import static java.util.stream.Collectors.toCollection;
+import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.CharMatcher;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.ClassPath;
 
@@ -54,14 +54,15 @@ import java.util.stream.Stream;
 public final class ResourceLocator {
 
   private static final ImmutableSet<String> supportedProtocols = ImmutableSet.of("file", "jar");
-  private final ImmutableSet<ClassPath.ResourceInfo> resources;
 
-  private ResourceLocator(ImmutableSet<ClassPath.ResourceInfo> resources) {
+  private final ImmutableMultimap<ClassLoader, ClassPath.ResourceInfo> resources;
+
+  private ResourceLocator(ImmutableMultimap<ClassLoader, ClassPath.ResourceInfo> resources) {
     this.resources = resources;
   }
 
   /**
-   * Locates resources matching the glob-pattern <tt>pattern</tt>. Resources are "folder-separated"
+   * Locates resources matching the glob-pattern {@code namePattern}. Resources are "folder-separated"
    * with {@code /}.
    *
    * <p>
@@ -74,23 +75,23 @@ public final class ResourceLocator {
    * </ul>
    *
    * <p>
-   * <b>Note:</b> the resource names don't start with a {@code /}.
+   * <b>Note:</b> the resource names don't start with {@code /}.
    *
    * <p>
    * Example of usage:
    *
    * <pre>{@code
-   * <code>locateResources("**&#47;*.properties") // Finds any resource whose name ends with ".properties".
+   * locateResources("**&#47;*.properties") // Finds any resource whose name ends with ".properties".
    * locateResources("**&#47;*.{java,class}") // Finds any resource whose name ends with ".java" or ".class".
    * locateResources("**&#47;*.???") // Finds any resource whose name ends with a dot then three characters.
    * }</pre>
    *
-   * @param pattern
+   * @param namePattern
    * @return
    */
-  public Stream<URL> locateResources(String pattern) {
-    checkNotNull(pattern);
-    Pattern p = Pattern.compile(globToRegex(pattern));
+  public Stream<URL> locateResources(String namePattern) {
+    checkNotNull(namePattern);
+    Pattern p = Pattern.compile(globToRegex(namePattern));
     return doLocateResources((name) -> p.matcher(name).matches());
   }
 
@@ -100,7 +101,7 @@ public final class ResourceLocator {
   }
 
   private Stream<URL> doLocateResources(Predicate<String> namePredicate) {
-    return this.resources.stream()
+    return this.resources.values().stream()
         .filter(r -> namePredicate.test(r.getResourceName()))
         .map(r -> r.url());
   }
@@ -115,7 +116,7 @@ public final class ResourceLocator {
     // TODO find a way to work similarly to ServiceLoader.
 
     ImmutableSet<String> serviceNames = ImmutableSet.copyOf(
-        this.resources.stream()
+        this.resources.values().stream()
         .filter(ri -> serviceResourceName.equals(ri.getResourceName()))
         .flatMap(ResourceLocator::urlToServiceNames)
         .map(s -> s.replace('.', '/') + ".class")
@@ -124,8 +125,7 @@ public final class ResourceLocator {
     if (serviceNames.isEmpty()) {
       return Stream.empty();
     }
-    
-    return this.resources.stream()
+    return this.resources.values().stream()
         .filter(ri -> serviceNames.contains(ri.getResourceName())
             && ri instanceof ClassPath.ClassInfo)
         .map(ri -> classInfoToClass((ClassPath.ClassInfo) ri, service));
@@ -133,7 +133,7 @@ public final class ResourceLocator {
 
   private static Stream<String> urlToServiceNames(ClassPath.ResourceInfo ri) {
     try {
-      return asCharSource(ri.url(), UTF_8)
+      return asCharSource(ri.url(), UTF_8) // ServiceLoader says that the file is UTF-8.
           .readLines().stream()
           .filter(s -> !s.isEmpty());
     } catch (IOException e) {
@@ -158,49 +158,55 @@ public final class ResourceLocator {
   }
 
   /**
-   * Returns a stream of resources which names match <tt>pattern</tt> and that are transformed into
-   * <tt>T</tt>s using <tt>loader</tt>.
+   * Returns a stream of resources which names match {@code namePattern} and that are transformed
+   * into {@code T}s using {@code loader}.
    *
    * <p>
    * Using a terminal operation on the stream may throw an {@link UncheckedIOException} wrapping an
-   * {@link IOException} thrown by <tt>loader</tt>.
+   * {@link IOException} thrown by {@code loader}.
    *
    * @param <T>
-   * @param pattern
+   * @param namePattern
    * @param loader
    * @return
    */
-  public <T> Stream<T> getResources(String pattern, ResourceLoader<T> loader) {
-    return locateResources(pattern).map(url -> loader.uncheckedLoad(asByteSource(url)));
+  public <T> Stream<T> loadResources(String namePattern, ResourceLoader<T> loader) {
+    return locateResources(namePattern).map(url -> loader.uncheckedLoad(asByteSource(url)));
   }
 
   /**
-   * Returns a stream of resources which names match <tt>namePredicate</tt> and that are transformed
-   * into <tt>T</tt>s using <tt>loader</tt>.
+   * Returns a stream of resources which names match {@code namePredicate} and that are transformed
+   * into {@code T}s using {@code loader}.
    *
    * <p>
    * Using a terminal operation on the stream may throw an {@link UncheckedIOException} wrapping an
-   * {@link IOException} thrown by <tt>loader</tt>.
+   * {@link IOException} thrown by {@code loader}.
    *
    * @param <T>
    * @param namePredicate
    * @param loader
    * @return
    */
-  public <T> Stream<T> getResources(Predicate<String> namePredicate, ResourceLoader<T> loader) {
+  public <T> Stream<T> loadResources(Predicate<String> namePredicate, ResourceLoader<T> loader) {
     return locateResources(namePredicate).map(url -> loader.uncheckedLoad(asByteSource(url)));
   }
 
+  /**
+   * 
+   */
   public static class Builder {
 
-    // Order matters? Let's assume yes.
-    private final Set<URL> urls = new LinkedHashSet<>();
-    
     private final Set<URLClassLoader> classLoaders = new LinkedHashSet<>();
-    
+
     public Builder() {
     }
 
+    /**
+     * 
+     * @param classLoader
+     * @return 
+     * @throws IllegalArgumentException
+     */
     public Builder addClassLoader(URLClassLoader classLoader) {
       checkNotNull(classLoader, "classLoader must not be null");
       stream(classLoader.getURLs())
@@ -211,6 +217,12 @@ public final class ResourceLocator {
       return this;
     }
 
+    /**
+     * 
+     * @param jarSource
+     * @return 
+     * throws IllegalArgumentException
+     */
     public Builder addJar(Path jarSource) {
       checkNotNull(jarSource);
       try {
@@ -227,6 +239,12 @@ public final class ResourceLocator {
       return this;
     }
 
+    /**
+     * 
+     * @param directorySource
+     * @return 
+     * @throws IllegalArgumentException
+     */
     public Builder addDirectory(Path directorySource) {
       checkNotNull(directorySource);
       checkArgument(isDirectory(directorySource), "directorySource is not a directory");
@@ -238,16 +256,21 @@ public final class ResourceLocator {
       return this;
     }
 
+    /**
+     * 
+     * @return
+     * @throws IOException 
+     * @throws IllegalStateException
+     */
     public ResourceLocator build() throws IOException {
-      checkState(!this.urls.isEmpty(), "At least one source must be added");
-      URL[] urlArray = this.urls.toArray(new URL[this.urls.size()]);
-      URLClassLoader classLoader = new URLClassLoader(urlArray, null);
-      ImmutableSet<ClassPath.ResourceInfo> resources = ImmutableSet.copyOf(
-          ClassPath.from(classLoader).getResources().stream()
-          .filter(ri -> isResourceInfoUrlCorrect(ri))
-          .iterator()
-      );
-      return new ResourceLocator(resources);
+      checkState(!this.classLoaders.isEmpty(), "At least one source must be added");
+      ImmutableMultimap.Builder<ClassLoader, ClassPath.ResourceInfo> builder = ImmutableMultimap.builder();
+      for (ClassLoader cl : this.classLoaders) {
+        builder.putAll(cl, ClassPath.from(cl).getResources().stream()
+            .filter(Builder::isResourceInfoUrlCorrect)
+            .collect(toList()));
+      }
+      return new ResourceLocator(builder.build());
     }
 
     private static boolean isResourceInfoUrlCorrect(ClassPath.ResourceInfo ri) {
