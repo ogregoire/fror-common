@@ -27,8 +27,10 @@ import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.CharMatcher;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.io.LineProcessor;
 import com.google.common.reflect.ClassPath;
 
 import java.io.IOException;
@@ -62,8 +64,8 @@ public final class ResourceLocator {
   }
 
   /**
-   * Locates resources matching the glob-pattern {@code namePattern}. Resources are "folder-separated"
-   * with {@code /}.
+   * Locates resources matching the glob-pattern {@code namePattern}. Resources are
+   * "folder-separated" with {@code /}.
    *
    * <p>
    * Pattern definition:
@@ -103,57 +105,66 @@ public final class ResourceLocator {
   private Stream<URL> doLocateResources(Predicate<String> namePredicate) {
     return this.resources.values().stream()
         .filter(r -> namePredicate.test(r.getResourceName()))
-        .map(r -> r.url());
+        .map(ClassPath.ResourceInfo::url);
   }
 
   private static final String SERVICE_PREFIX = "META-INF/services/";
 
-  /* public */ <T> Stream<Class<? extends T>> getServices(Class<T> service) {
-    if (1 + 1 != 2) { // Let's hope that no cosmic ray will impact this.
-      throw new UnsupportedOperationException("Not implemented yet");
-    }
-    String serviceResourceName = SERVICE_PREFIX + service.getName();
-    // TODO find a way to work similarly to ServiceLoader.
-
-    ImmutableSet<String> serviceNames = ImmutableSet.copyOf(
-        this.resources.values().stream()
-        .filter(ri -> serviceResourceName.equals(ri.getResourceName()))
-        .flatMap(ResourceLocator::urlToServiceNames)
-        .map(s -> s.replace('.', '/') + ".class")
-        .iterator()
-    );
-    if (serviceNames.isEmpty()) {
-      return Stream.empty();
-    }
-    return this.resources.values().stream()
-        .filter(ri -> serviceNames.contains(ri.getResourceName())
-            && ri instanceof ClassPath.ClassInfo)
-        .map(ri -> classInfoToClass((ClassPath.ClassInfo) ri, service));
+  public <T> Stream<Class<? extends T>> getServices(Class<T> service) {
+    return getImplementationNames(service.getName()).entries().stream()
+        .map((e) -> toClass(e.getValue(), service, e.getKey()));
   }
 
-  private static Stream<String> urlToServiceNames(ClassPath.ResourceInfo ri) {
+  private ImmutableMultimap<ClassLoader, String> getImplementationNames(String serviceName) {
+    final String resourceName = SERVICE_PREFIX + serviceName;
+    ImmutableMultimap.Builder<ClassLoader, String> implementationNames = ImmutableMultimap.builder();
+    this.resources.keySet().stream().forEach((classLoader) -> {
+      URL url = classLoader.getResource(resourceName);
+      if (url != null) {
+        implementationNames.putAll(classLoader, urlToServiceNames(url));
+      }
+    });
+    return implementationNames.build();
+  }
+
+  private static ImmutableList<String> urlToServiceNames(URL url) {
     try {
-      return asCharSource(ri.url(), UTF_8) // ServiceLoader says that the file is UTF-8.
-          .readLines().stream()
-          .filter(s -> !s.isEmpty());
+       // ServiceLoader's doc says that the service provider file is UTF-8-encoded.
+      return asCharSource(url, UTF_8)
+          .readLines(new ServiceProviderProcessor());
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
   }
 
-  private static <T> Class<? extends T> classInfoToClass(ClassPath.ClassInfo ci, Class<T> service) {
-    // TODO: Which ClassLoader to use?
-    // - Thread.currentThread().getContextClassLoader()
-    // - ClassLoader.getSystemClassLoader()
-    // - A specific one given as parameter
-    // - service's ClassLoader
-    // - The ClassLoaders potentially passed in the builder
-    // - Create a new one with ClassLoader.getSystemClassLoader() as parent
-    // I'm lost...
+  private static class ServiceProviderProcessor implements LineProcessor<ImmutableList<String>> {
+
+    private final ImmutableList.Builder<String> serviceResourceNames = ImmutableList.builder();
+
+    @Override
+    public boolean processLine(String line) throws IOException {
+      int numberPos = line.indexOf('#');
+      if (numberPos >= 0) {
+        line = line.substring(0, numberPos);
+      }
+      line = line.trim();
+      if (!line.isEmpty()) {
+        serviceResourceNames.add(line);
+      }
+      return true;
+    }
+
+    @Override
+    public ImmutableList<String> getResult() {
+      return serviceResourceNames.build();
+    }
+  }
+
+  private static <T> Class<? extends T> toClass(String name, Class<T> service, ClassLoader loader) {
     try {
-      return (Class<? extends T>) Class.forName(ci.getName(), false, Thread.currentThread().getContextClassLoader());
-    } catch (ClassNotFoundException ex) {
-      throw propagate(ex);
+      return (Class<? extends T>) Class.forName(name, false, loader);
+    } catch (ClassNotFoundException e) {
+      throw propagate(e);
     }
   }
 
@@ -192,7 +203,7 @@ public final class ResourceLocator {
   }
 
   /**
-   * 
+   *
    */
   public static class Builder {
 
@@ -202,9 +213,9 @@ public final class ResourceLocator {
     }
 
     /**
-     * 
+     *
      * @param classLoader
-     * @return 
+     * @return
      * @throws IllegalArgumentException
      */
     public Builder addClassLoader(URLClassLoader classLoader) {
@@ -218,10 +229,9 @@ public final class ResourceLocator {
     }
 
     /**
-     * 
+     *
      * @param jarSource
-     * @return 
-     * throws IllegalArgumentException
+     * @return throws IllegalArgumentException
      */
     public Builder addJar(Path jarSource) {
       checkNotNull(jarSource);
@@ -240,9 +250,9 @@ public final class ResourceLocator {
     }
 
     /**
-     * 
+     *
      * @param directorySource
-     * @return 
+     * @return
      * @throws IllegalArgumentException
      */
     public Builder addDirectory(Path directorySource) {
@@ -257,9 +267,8 @@ public final class ResourceLocator {
     }
 
     /**
-     * 
-     * @return
-     * @throws IOException 
+     *
+     * @return @throws IOException
      * @throws IllegalStateException
      */
     public ResourceLocator build() throws IOException {
