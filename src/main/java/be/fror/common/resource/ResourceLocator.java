@@ -102,6 +102,48 @@ public final class ResourceLocator {
     return doLocateResources(namePredicate);
   }
 
+  /**
+   * Returns a stream of resources which names match {@code namePattern} and that are transformed
+   * into {@code T}s using {@code loader}.
+   *
+   * <p>
+   * Using a terminal operation on the stream may throw an {@link UncheckedIOException} wrapping an
+   * {@link IOException} thrown by {@code loader}.
+   *
+   * @param <T>
+   * @param namePattern
+   * @param loader
+   * @return
+   */
+  public <T> Stream<T> loadResources(String namePattern, ResourceLoader<T> loader) {
+    return locateResources(namePattern).map(url -> loader.uncheckedLoad(asByteSource(url)));
+  }
+
+  /**
+   * Returns a stream of resources which names match {@code namePredicate} and that are transformed
+   * into {@code T}s using {@code loader}.
+   *
+   * <p>
+   * Using a terminal operation on the stream may throw an {@link UncheckedIOException} wrapping an
+   * {@link IOException} thrown by {@code loader}.
+   *
+   * @param <T>
+   * @param namePredicate
+   * @param loader
+   * @return
+   */
+  public <T> Stream<T> loadResources(Predicate<String> namePredicate, ResourceLoader<T> loader) {
+    return locateResources(namePredicate).map(url -> loader.uncheckedLoad(asByteSource(url)));
+  }
+
+  public <T> Stream<Resource<T>> getResources(String namePattern, ResourceLoader<T> loader) {
+    return locateResources(namePattern).map(url -> new Resource<>(asByteSource(url), loader));
+  }
+  
+  public <T> Stream<Resource<T>> getResources(Predicate<String> namePredicate, ResourceLoader<T> loader) {
+    return locateResources(namePredicate).map(url -> new Resource<>(asByteSource(url), loader));
+  }
+  
   private Stream<URL> doLocateResources(Predicate<String> namePredicate) {
     return this.resources.values().stream()
         .filter(r -> namePredicate.test(r.getResourceName()))
@@ -166,40 +208,6 @@ public final class ResourceLocator {
     } catch (ClassNotFoundException e) {
       throw propagate(e);
     }
-  }
-
-  /**
-   * Returns a stream of resources which names match {@code namePattern} and that are transformed
-   * into {@code T}s using {@code loader}.
-   *
-   * <p>
-   * Using a terminal operation on the stream may throw an {@link UncheckedIOException} wrapping an
-   * {@link IOException} thrown by {@code loader}.
-   *
-   * @param <T>
-   * @param namePattern
-   * @param loader
-   * @return
-   */
-  public <T> Stream<T> loadResources(String namePattern, ResourceLoader<T> loader) {
-    return locateResources(namePattern).map(url -> loader.uncheckedLoad(asByteSource(url)));
-  }
-
-  /**
-   * Returns a stream of resources which names match {@code namePredicate} and that are transformed
-   * into {@code T}s using {@code loader}.
-   *
-   * <p>
-   * Using a terminal operation on the stream may throw an {@link UncheckedIOException} wrapping an
-   * {@link IOException} thrown by {@code loader}.
-   *
-   * @param <T>
-   * @param namePredicate
-   * @param loader
-   * @return
-   */
-  public <T> Stream<T> loadResources(Predicate<String> namePredicate, ResourceLoader<T> loader) {
-    return locateResources(namePredicate).map(url -> loader.uncheckedLoad(asByteSource(url)));
   }
 
   /**

@@ -41,22 +41,22 @@ public final class Resource<T> implements Supplier<T> {
     this.reference = new SoftReference<>(null);
   }
 
-  T load() throws UncheckedIOException {
-    return this.loader.uncheckedLoad(this.source);
-  }
-
-  @Override
-  public T get() throws UncheckedIOException {
+  public T load() throws UncheckedIOException {
     T object = this.reference.get();
     if (object == null) {
       synchronized (this.lock) {
         object = this.reference.get();
         if (object == null) {
-          object = this.load();
+          object = this.loader.uncheckedLoad(this.source);
           this.reference = new SoftReference(object);
         }
       }
     }
     return object;
+  }
+
+  @Override
+  public T get() throws UncheckedIOException {
+    return load();
   }
 }
