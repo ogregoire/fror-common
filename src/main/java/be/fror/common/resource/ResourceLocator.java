@@ -136,14 +136,28 @@ public final class ResourceLocator {
     return locateResources(namePredicate).map(url -> loader.uncheckedLoad(asByteSource(url)));
   }
 
+  /**
+   *
+   * @param <T>
+   * @param namePattern
+   * @param loader
+   * @return
+   */
   public <T> Stream<Resource<T>> getResources(String namePattern, ResourceLoader<T> loader) {
     return locateResources(namePattern).map(url -> new Resource<>(asByteSource(url), loader));
   }
-  
+
+  /**
+   *
+   * @param <T>
+   * @param namePredicate
+   * @param loader
+   * @return
+   */
   public <T> Stream<Resource<T>> getResources(Predicate<String> namePredicate, ResourceLoader<T> loader) {
     return locateResources(namePredicate).map(url -> new Resource<>(asByteSource(url), loader));
   }
-  
+
   private Stream<URL> doLocateResources(Predicate<String> namePredicate) {
     return this.resources.values().stream()
         .filter(r -> namePredicate.test(r.getResourceName()))
@@ -171,7 +185,7 @@ public final class ResourceLocator {
 
   private static ImmutableList<String> urlToServiceNames(URL url) {
     try {
-       // ServiceLoader's doc says that the service provider file is UTF-8-encoded.
+      // ServiceLoader's doc says that the service provider file is UTF-8-encoded.
       return asCharSource(url, UTF_8)
           .readLines(new ServiceProviderProcessor());
     } catch (IOException e) {

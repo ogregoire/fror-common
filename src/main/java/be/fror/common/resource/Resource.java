@@ -21,11 +21,15 @@ import java.io.UncheckedIOException;
 import java.lang.ref.SoftReference;
 import java.util.function.Supplier;
 
+import javax.annotation.concurrent.ThreadSafe;
+
 /**
- *
+ * Loads a resource and returns it or a cached instance of it.
+ * 
  * @author Olivier Grégoire &lt;https://github.com/ogregoire&gt;
  * @param <T>
  */
+@ThreadSafe
 public final class Resource<T> implements Supplier<T> {
 
   private final ByteSource source;
@@ -41,7 +45,12 @@ public final class Resource<T> implements Supplier<T> {
     this.reference = new SoftReference<>(null);
   }
 
-  public T load() throws UncheckedIOException {
+  /**
+   * @return the cached resource
+   * @throws UncheckedIOException 
+   */
+  @Override
+  public T get() {
     T object = this.reference.get();
     if (object == null) {
       synchronized (this.lock) {
@@ -53,10 +62,5 @@ public final class Resource<T> implements Supplier<T> {
       }
     }
     return object;
-  }
-
-  @Override
-  public T get() throws UncheckedIOException {
-    return load();
   }
 }
