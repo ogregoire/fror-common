@@ -49,11 +49,18 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Stream;
 
+import javax.annotation.concurrent.ThreadSafe;
+
 /**
  *
  * @author Olivier Grégoire &lt;https://github.com/ogregoire&gt;
  */
+@ThreadSafe
 public final class ResourceLocator {
+  
+  // Notes:
+  // * http://docs.spring.io/spring/docs/current/spring-framework-reference/html/resources.html
+  
 
   private static final ImmutableSet<String> supportedProtocols = ImmutableSet.of("file", "jar");
 
