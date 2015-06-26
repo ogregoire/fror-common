@@ -16,7 +16,7 @@
 package be.fror.common.collection;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 import static java.util.Spliterator.IMMUTABLE;
 import static java.util.Spliterator.ORDERED;
 
@@ -28,6 +28,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.Spliterators;
 import java.util.function.ToDoubleFunction;
+import java.util.function.ToIntFunction;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -75,13 +76,13 @@ public final class RandomSelector<T> {
    */
   public static <T> RandomSelector<T> uniform(final Collection<T> elements)
       throws IllegalArgumentException {
-    checkNotNull(elements, "collection must not be null");
+    requireNonNull(elements, "collection must not be null");
     checkArgument(!elements.isEmpty(), "collection must not be empty");
 
     final int size = elements.size();
     final T[] els = elements.toArray((T[]) new Object[size]);
 
-    return new RandomSelector<>(els, (random) -> random.nextInt(size));
+    return new RandomSelector<>(els, Random::nextInt);
   }
 
   /**
@@ -104,7 +105,7 @@ public final class RandomSelector<T> {
    */
   public static <T> RandomSelector<T> weightedByCount(final Multiset<T> elements)
       throws IllegalArgumentException {
-    checkNotNull(elements, "elements must not be null");
+    requireNonNull(elements, "elements must not be null");
     checkArgument(!elements.isEmpty(), "elements must not be empty");
 
     final Set<Multiset.Entry<T>> entries = elements.entrySet();
@@ -140,8 +141,8 @@ public final class RandomSelector<T> {
       final Collection<T> elements,
       final ToDoubleFunction<? super T> weighter)
       throws IllegalArgumentException {
-    checkNotNull(elements, "elements must not be null");
-    checkNotNull(weighter, "weighter must not be null");
+    requireNonNull(elements, "elements must not be null");
+    requireNonNull(weighter, "weighter must not be null");
     checkArgument(!elements.isEmpty(), "elements must not be empty");
 
     final int size = elements.size();
@@ -162,9 +163,9 @@ public final class RandomSelector<T> {
   }
 
   private final T[] elements;
-  private final Selection selection;
+  private final ToIntFunction<Random> selection;
 
-  RandomSelector(final T[] elements, final Selection selection) {
+  RandomSelector(final T[] elements, final ToIntFunction<Random> selection) {
     this.elements = elements;
     this.selection = selection;
   }
@@ -176,7 +177,7 @@ public final class RandomSelector<T> {
    * @return
    */
   public T next(final Random random) {
-    return this.elements[this.selection.next(random)];
+    return this.elements[this.selection.applyAsInt(random)];
   }
 
   /**
@@ -192,7 +193,7 @@ public final class RandomSelector<T> {
    * @return
    */
   public Stream<T> stream(final Random random) {
-    checkNotNull(random, "random must not be null");
+    requireNonNull(random, "random must not be null");
     return StreamSupport.stream(
         Spliterators.spliteratorUnknownSize(
             new BaseIterator(random),
@@ -221,12 +222,7 @@ public final class RandomSelector<T> {
     }
   }
 
-  static interface Selection {
-
-    int next(final Random random);
-  }
-
-  private static class RandomWeightedSelection implements Selection {
+  private static class RandomWeightedSelection implements ToIntFunction<Random> {
     // Alias method implementation O(1)
     // using Vose's algorithm to initialize O(n)
 
@@ -276,7 +272,7 @@ public final class RandomSelector<T> {
     }
 
     @Override
-    public int next(final Random random) {
+    public int applyAsInt(final Random random) {
       final int column = random.nextInt(this.probabilities.length);
       return random.nextDouble() < this.probabilities[column]
           ? column
