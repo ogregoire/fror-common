@@ -17,8 +17,8 @@ package be.fror.common.collection;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Spliterator.IMMUTABLE;
 import static java.util.Spliterator.ORDERED;
-import static java.util.Spliterators.spliteratorUnknownSize;
 
 import com.google.common.collect.Multiset;
 
@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
+import java.util.Spliterators;
 import java.util.function.ToDoubleFunction;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -192,7 +193,13 @@ public final class RandomSelector<T> {
    */
   public Stream<T> stream(final Random random) {
     checkNotNull(random, "random must not be null");
-    return StreamSupport.stream(spliteratorUnknownSize(new BaseIterator(random), ORDERED), false);
+    return StreamSupport.stream(
+        Spliterators.spliteratorUnknownSize(
+            new BaseIterator(random),
+            IMMUTABLE | ORDERED
+        ),
+        false
+    );
   }
 
   private class BaseIterator implements Iterator<T> {
