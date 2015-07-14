@@ -31,6 +31,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -60,6 +61,20 @@ public class RandomSelectorTest {
   }
 
   @Test
+  public void testUniform_next() {
+    List<String> elements = Arrays.asList("a", "b", "c", "d");
+    Random random = new Random(0);
+
+    RandomSelector<String> selector = RandomSelector.uniform(elements);
+    Multiset<String> selectedElements = selectNext(selector, random, 1_000_000);
+
+    for (Multiset.Entry<String> entry : selectedElements.entrySet()) {
+      assertThat((double) entry.getCount() / 1_000_000, is(closeTo(0.25d, 0.01d)));
+    }
+
+  }
+
+  @Test
   public void testWeightedByCount_next() {
 
     ImmutableMultiset<String> weightedElements = ImmutableMultiset.<String>builder()
@@ -71,10 +86,7 @@ public class RandomSelectorTest {
     Random random = new Random(0);
 
     RandomSelector<String> selector = RandomSelector.weightedByCount(weightedElements);
-    Multiset<String> selectedElements = TreeMultiset.create();
-    for (int i = 0; i < 1_000_000; i++) {
-      selectedElements.add(selector.next(random));
-    }
+    Multiset<String> selectedElements = selectNext(selector, random, 1_000_000);
 
     for (Multiset.Entry<String> entry : weightedElements.entrySet()) {
       double expectedRatio = (double) entry.getCount() / weightedElements.size();
@@ -82,6 +94,14 @@ public class RandomSelectorTest {
       assertThat(actualRatio, is(closeTo(expectedRatio, 0.01)));
     }
 
+  }
+
+  private <T extends Comparable<?>> Multiset<T> selectNext(RandomSelector<T> selector, Random random, int size) {
+    Multiset<T> selectedElements = TreeMultiset.create();
+    for (int i = 0; i < size; i++) {
+      selectedElements.add(selector.next(random));
+    }
+    return selectedElements;
   }
 
   @Test
