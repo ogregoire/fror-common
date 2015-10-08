@@ -82,7 +82,7 @@ public final class RandomSelector<T> {
     final int size = elements.size();
     final T[] els = elements.toArray((T[]) new Object[size]);
 
-    return new RandomSelector<>(els, Random::nextInt);
+    return new RandomSelector<>(els, r -> r.nextInt(size));
   }
 
   /**
