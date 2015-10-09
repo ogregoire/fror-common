@@ -168,7 +168,7 @@ public final class ResourceLocator {
   }
 
   private Stream<URL> doLocateResources(Predicate<String> namePredicate) {
-    return this.resources.values().stream()
+    return resources.values().stream()
         .filter(r -> namePredicate.test(r.getResourceName()))
         .map(ClassPath.ResourceInfo::url);
   }
@@ -242,7 +242,7 @@ public final class ResourceLocator {
           .filter((url) -> supportedProtocols.contains(url.getProtocol()))
           .findFirst()
           .orElseThrow(() -> new IllegalArgumentException("No URL in URLClassLoader are usable"));
-      this.classLoaders.add(classLoader);
+      classLoaders.add(classLoader);
       return this;
     }
 
@@ -260,7 +260,7 @@ public final class ResourceLocator {
           url = new URL("jar", "", -1, url.toString() + "!/");
         } catch (MalformedURLException unused) {
         }
-        this.classLoaders.add(new URLClassLoader(new URL[]{url}, null));
+        classLoaders.add(new URLClassLoader(new URL[]{url}, null));
       } catch (IOException unused) {
         checkArgument(false, "jarSource doesn't refer to a valid jar file");
       }
@@ -277,7 +277,7 @@ public final class ResourceLocator {
       checkNotNull(directorySource);
       checkArgument(isDirectory(directorySource), "directorySource is not a directory");
       try {
-        this.classLoaders.add(new URLClassLoader(new URL[]{directorySource.toUri().toURL()}, null));
+        classLoaders.add(new URLClassLoader(new URL[]{directorySource.toUri().toURL()}, null));
       } catch (IOException unused) {
         checkArgument(false, "directorySource cannot be mapped to a URL");
       }
@@ -290,9 +290,9 @@ public final class ResourceLocator {
      * @throws IllegalStateException
      */
     public ResourceLocator build() throws IOException {
-      checkState(!this.classLoaders.isEmpty(), "At least one source must be added");
+      checkState(!classLoaders.isEmpty(), "At least one source must be added");
       ImmutableMultimap.Builder<ClassLoader, ClassPath.ResourceInfo> builder = ImmutableMultimap.builder();
-      for (ClassLoader cl : this.classLoaders) {
+      for (ClassLoader cl : classLoaders) {
         builder.putAll(cl, ClassPath.from(cl).getResources().stream()
             .filter(Builder::isResourceInfoUrlCorrect)
             .collect(toList()));
@@ -387,7 +387,7 @@ public final class ResourceLocator {
     int index = 0;
 
     CharIterator(String s) {
-      this.chars = s.toCharArray();
+      chars = s.toCharArray();
     }
 
     boolean hasNext() {

@@ -104,7 +104,7 @@ public final class ResourceLoaders {
    * @return
    */
   public static ResourceLoader<Properties> propertiesLoader(Charset charset) {
-    return charsetPropertiesLoaders.computeIfAbsent(charset, (c) -> new CharsetPropertiesLoader(c));
+    return charsetPropertiesLoaders.computeIfAbsent(charset, CharsetPropertiesLoader::new);
   }
 
   private static final Map<Charset, ResourceLoader<Properties>> charsetPropertiesLoaders;
@@ -127,7 +127,7 @@ public final class ResourceLoaders {
 
     @Override
     public void load(Properties properties, ByteSource source) throws IOException {
-      try (Reader reader = source.asCharSource(this.charset).openStream()) {
+      try (Reader reader = source.asCharSource(charset).openStream()) {
         properties.load(reader);
       }
     }

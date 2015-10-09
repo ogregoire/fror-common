@@ -137,7 +137,7 @@ public final class RandomSelector<T> {
    * @return
    */
   public T next(final Random random) {
-    return this.elements[this.selection.applyAsInt(random)];
+    return elements[selection.applyAsInt(random)];
   }
 
   /**
@@ -233,10 +233,10 @@ public final class RandomSelector<T> {
 
     @Override
     public int applyAsInt(final Random random) {
-      final int column = random.nextInt(this.probabilities.length);
-      return random.nextDouble() < this.probabilities[column]
+      final int column = random.nextInt(probabilities.length);
+      return random.nextDouble() < probabilities[column]
           ? column
-          : this.alias[column];
+          : alias[column];
     }
   }
 }

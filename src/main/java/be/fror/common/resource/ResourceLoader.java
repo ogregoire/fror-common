@@ -41,7 +41,7 @@ public interface ResourceLoader<T> {
    * This method is the same as calling:
    *
    * <pre>{@code try {
-   *   return this.load(source);
+   *   return load(source);
    * } catch (IOException ex) {
    *   throw new UncheckedIOException(ex);
    * }}</pre>
@@ -54,7 +54,7 @@ public interface ResourceLoader<T> {
   @Nonnull
   public default <T> T uncheckedLoad(ByteSource source) throws UncheckedIOException {
     try {
-      return this.load(source);
+      return load(source);
     } catch (IOException ex) {
       throw new UncheckedIOException(ex);
     }

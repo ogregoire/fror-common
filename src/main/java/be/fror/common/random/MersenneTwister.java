@@ -87,7 +87,7 @@ public final class MersenneTwister extends Random {
   @Override
   protected int next(int bits) {
     if (index == N) {
-      final int[] mt = this.MT;
+      final int[] mt = MT;
       final int[] zom = ZERO_OR_MATRIX;
       final int mid = N - M;
       for (int n = 0; n < mid; n++) {

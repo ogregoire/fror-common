@@ -51,13 +51,13 @@ public final class Resource<T> implements Supplier<T> {
    */
   @Override
   public T get() {
-    T object = this.reference.get();
+    T object = reference.get();
     if (object == null) {
-      synchronized (this.lock) {
-        object = this.reference.get();
+      synchronized (lock) {
+        object = reference.get();
         if (object == null) {
-          object = this.loader.uncheckedLoad(this.source);
-          this.reference = new SoftReference(object);
+          object = loader.uncheckedLoad(source);
+          reference = new SoftReference(object);
         }
       }
     }
