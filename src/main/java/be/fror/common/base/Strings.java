@@ -15,19 +15,57 @@
  */
 package be.fror.common.base;
 
+import static be.fror.common.base.Preconditions.checkArgument;
 import static be.fror.common.base.Preconditions.checkNotNull;
 
 import java.text.Normalizer;
 import java.util.regex.Pattern;
+
+import javax.annotation.Nullable;
 
 /**
  * Tools for String that are not present in Guava.
  *
  * @author Olivier Grégoire
  */
-public final class MoreStrings {
+public final class Strings {
 
-  private MoreStrings() {
+  private Strings() {
+  }
+
+  public static String nullToEmpty(@Nullable String string) {
+    return string == null ? "" : string;
+  }
+
+  @Nullable
+  public static String emptyToNull(@Nullable String string) {
+    return isNullOrEmpty(string) ? null : string;
+  }
+
+  public static boolean isNullOrEmpty(@Nullable String string) {
+    return string == null || string.isEmpty();
+  }
+
+  public static String repeat(String string, int count) {
+    checkNotNull(string);
+    if (count <= 1) {
+      checkArgument(count >= 0, "Invalid count: %s", count);
+      return count == 0 ? "" : string;
+    }
+    final int len = string.length();
+    final long longSize = (long) len * (long) count;
+    final int size = (int) longSize;
+    if (size != longSize) {
+      throw new ArrayIndexOutOfBoundsException("Required array size too large: " + longSize);
+    }
+    final char[] array = new char[size];
+    string.getChars(0, len, array, 0);
+    int n;
+    for (n = len; n < size - n; n <<= 1) {
+      System.arraycopy(array, 0, array, n, n);
+    }
+    System.arraycopy(array, 0, array, n, size - n);
+    return new String(array);
   }
 
   private static final Pattern MULTIPLE_IN_COMBINING_DIACRITICAL_MARKS_PATTERN = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");

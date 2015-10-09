@@ -37,7 +37,6 @@ public final class Throwables {
 
   public static <X extends Throwable> void propagateIfInstanceOf(
       @Nullable Throwable throwable, Class<X> declaredType) throws X {
-    // Check for null is needed to avoid frequent JNI calls to isInstance().
     if (throwable != null && declaredType.isInstance(throwable)) {
       throw declaredType.cast(throwable);
     }
@@ -79,7 +78,7 @@ public final class Throwables {
   @CheckReturnValue
   public static List<Throwable> getCausalChain(Throwable throwable) {
     checkNotNull(throwable);
-    List<Throwable> causes = new ArrayList<Throwable>(4);
+    List<Throwable> causes = new ArrayList<>(4);
     while (throwable != null) {
       causes.add(throwable);
       throwable = throwable.getCause();

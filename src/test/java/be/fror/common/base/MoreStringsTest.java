@@ -107,9 +107,9 @@ public class MoreStringsTest {
     };
     for (String[] pair : pairs) {
       if (pair.length == 3) {
-        assertThat(pair[0], MoreStrings.removeDiacriticalMarks(pair[1]), is(equalTo(pair[2])));
+        assertThat(pair[0], Strings.removeDiacriticalMarks(pair[1]), is(equalTo(pair[2])));
       } else {
-        assertThat(MoreStrings.removeDiacriticalMarks(pair[0]), is(equalTo(pair[1])));
+        assertThat(Strings.removeDiacriticalMarks(pair[0]), is(equalTo(pair[1])));
       }
     }
   }
