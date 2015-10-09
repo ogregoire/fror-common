@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Olivier Grégoire <https://github.com/ogregoire>.
+ * Copyright 2015 Olivier Grégoire.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ import java.util.Random;
 
 /**
  *
- * @author Olivier Grégoire &lt;https://github.com/ogregoire&gt;
+ * @author Olivier Grégoire
  */
 public class RandomSelectorTest {
 
@@ -85,7 +85,7 @@ public class RandomSelectorTest {
         .build();
     Random random = new Random(0);
 
-    RandomSelector<String> selector = RandomSelector.weightedByCount(weightedElements);
+    RandomSelector<String> selector = RandomSelector.weighted(weightedElements.elementSet(), e -> (double)weightedElements.count(e));
     Multiset<String> selectedElements = selectNext(selector, random, 1_000_000);
 
     for (Multiset.Entry<String> entry : weightedElements.entrySet()) {
@@ -117,7 +117,7 @@ public class RandomSelectorTest {
         .addCopies("d", 1)
         .build();
 
-    RandomSelector<String> selector = RandomSelector.weightedByCount(weightedElements);
+    RandomSelector<String> selector = RandomSelector.weighted(weightedElements.elementSet(), e -> (double)weightedElements.count(e));
 
     List<String> streamed = selector.stream(new Random(randomSeed))
         .limit(elements)

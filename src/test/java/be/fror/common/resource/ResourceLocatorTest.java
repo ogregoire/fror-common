@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Olivier Grégoire <https://github.com/ogregoire>.
+ * Copyright 2015 Olivier Grégoire.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,12 +38,10 @@ import java.net.URLClassLoader;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
- * @author Olivier Grégoire &lt;https://github.com/ogregoire&gt;
+ * @author Olivier Grégoire
  */
 public class ResourceLocatorTest {
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Olivier Grégoire <https://github.com/ogregoire>.
+ * Copyright 2015 Olivier Grégoire.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package be.fror.common.resource;
 
-import com.google.common.io.ByteSource;
+import be.fror.common.io.ByteSource;
 
 import java.io.UncheckedIOException;
 import java.lang.ref.SoftReference;
@@ -26,7 +26,7 @@ import javax.annotation.concurrent.ThreadSafe;
 /**
  * Loads a resource and returns it or a cached instance of it.
  * 
- * @author Olivier Grégoire &lt;https://github.com/ogregoire&gt;
+ * @author Olivier Grégoire
  * @param <T>
  */
 @ThreadSafe

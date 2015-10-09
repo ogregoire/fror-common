@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Olivier Grégoire <https://github.com/ogregoire>.
+ * Copyright 2015 Olivier Grégoire.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import static java.nio.charset.StandardCharsets.UTF_16BE;
 import static java.nio.charset.StandardCharsets.UTF_16LE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import com.google.common.io.ByteSource;
+import be.fror.common.io.ByteSource;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,7 +36,7 @@ import java.util.Properties;
 /**
  * Tools for {@link ResourceLoader}, including static factory methods.
  *
- * @author Olivier Grégoire &lt;https://github.com/ogregoire&gt;
+ * @author Olivier Grégoire
  */
 public final class ResourceLoaders {
 

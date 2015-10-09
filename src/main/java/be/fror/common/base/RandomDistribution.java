@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Olivier Grégoire <https://github.com/ogregoire>.
+ * Copyright 2015 Olivier Grégoire.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
  */
 package be.fror.common.base;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
+import static be.fror.common.base.Preconditions.checkArgument;
+import static be.fror.common.base.Preconditions.checkNotNull;
 import static java.lang.Math.PI;
 import static java.lang.Math.abs;
 import static java.lang.Math.ceil;
@@ -29,7 +29,7 @@ import java.util.Random;
 
 /**
  *
- * @author Olivier Grégoire &lt;https://github.com/ogregoire&gt;
+ * @author Olivier Grégoire
  */
 public final class RandomDistribution {
 

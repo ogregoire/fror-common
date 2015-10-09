@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Olivier Grégoire <https://github.com/ogregoire>.
+ * Copyright 2015 Olivier Grégoire.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +15,14 @@
  */
 package be.fror.common.collection;
 
-import static com.google.common.base.Preconditions.checkArgument;
+import static be.fror.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 import static java.util.Spliterator.IMMUTABLE;
 import static java.util.Spliterator.ORDERED;
 
-import com.google.common.collect.Multiset;
-
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Random;
-import java.util.Set;
 import java.util.Spliterators;
 import java.util.function.ToDoubleFunction;
 import java.util.function.ToIntFunction;
@@ -42,13 +39,13 @@ import javax.annotation.concurrent.ThreadSafe;
  *
  * <pre><code>
  * Random random = ...
- * ImmutableMultiset&lt;String&gt; weightedStrings = ImmutableMultiset.&lt;String&gt;builder()
- *   .addCopies("a", 4)
- *   .addCopies("b", 3)
- *   .addCopies("c", 12)
- *   .addCopies("d", 1)
- *   .build();
- * RandomSelector&lt;String&gt; selector = RandomSelector.weighted(weightedElements);
+ * Map&lt;String, Double&gt; stringWeights = new Hash&lt;&gt;();
+ * stringWeights.put("a", 4d);
+ * stringWeights.put("b", 3d);
+ * stringWeights.put("c", 12d);
+ * stringWeights.put("d", 1d);
+ *
+ * RandomSelector&lt;String&gt; selector = RandomSelector.weighted(stringWeights.keySet(), s -&gt; stringWeights.get(s));
  * List&lt;String&gt; selection = new ArrayList&lt;&gt;();
  * for (int i = 0; i &lt; 10; i++) {
  *   selection.add(selector.next(random));
@@ -56,7 +53,7 @@ import javax.annotation.concurrent.ThreadSafe;
  * </code></pre>
  *
  *
- * @author Olivier Grégoire &lt;https://github.com/ogregoire&gt;
+ * @author Olivier Grégoire
  * @param <T>
  */
 @ThreadSafe
@@ -68,7 +65,7 @@ public final class RandomSelector<T> {
    * <p>
    * A copy of <tt>elements</tt> is kept, so any modification to <tt>elements</tt> will not be
    * reflected in returned values.
-   * 
+   *
    * @param <T>
    * @param elements
    * @return
@@ -87,49 +84,12 @@ public final class RandomSelector<T> {
 
   /**
    * Creates a random selector among <tt>elements</tt> where the elements have a weight defined by
-   * their number of occurrences in <tt>elements</tt>.
-   *
-   * <p>
-   * A copy of <tt>elements</tt> is kept, so any modification to <tt>elements</tt> will not be
-   * reflected in returned values.
-   * 
-   * <p>
-   * This is actually a memory optimization of <tt>{@link #uniform(java.util.Collection) }</tt> for
-   * {@link Multiset multisets}. Use <tt>{@link #uniform(java.util.Collection) }</tt> if you need a
-   * faster next implementation for a worse memory usage.
-   *
-   * @param <T>
-   * @param elements
-   * @return
-   * @throws IllegalArgumentException if <tt>elements</tt> is empty.
-   */
-  public static <T> RandomSelector<T> weightedByCount(final Multiset<T> elements)
-      throws IllegalArgumentException {
-    requireNonNull(elements, "elements must not be null");
-    checkArgument(!elements.isEmpty(), "elements must not be empty");
-
-    final Set<Multiset.Entry<T>> entries = elements.entrySet();
-    final double totalSize = elements.size();
-    final int entriesSize = entries.size();
-    final T[] els = (T[]) new Object[entriesSize];
-    final double[] discreteProbabilities = new double[entriesSize];
-    int i = 0;
-    for (final Multiset.Entry<T> entry : entries) {
-      els[i] = entry.getElement();
-      discreteProbabilities[i] = entry.getCount() / totalSize;
-      i++;
-    }
-    return new RandomSelector<>(els, new RandomWeightedSelection(discreteProbabilities));
-  }
-
-  /**
-   * Creates a random selector among <tt>elements</tt> where the elements have a weight defined by
    * <tt>weighter</tt>.
    *
    * <p>
    * A copy of <tt>elements</tt> is kept, so any modification to <tt>elements</tt> will not be
    * reflected in returned values.
-   * 
+   *
    * @param <T>
    * @param elements
    * @param weighter

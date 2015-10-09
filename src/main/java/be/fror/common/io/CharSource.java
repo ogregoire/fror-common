@@ -16,11 +16,14 @@
 package be.fror.common.io;
 
 import static be.fror.common.base.Preconditions.checkNotNull;
+import static java.util.stream.Collectors.toList;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.io.Writer;
+import java.util.stream.Stream;
 
 /**
  *
@@ -39,9 +42,28 @@ public abstract class CharSource {
     }
   }
 
+  public BufferedReader openBufferedStream() throws UncheckedIOException {
+    Reader reader = openStream();
+    if (reader instanceof BufferedReader) {
+      return (BufferedReader) reader;
+    } else {
+      return new BufferedReader(reader);
+    }
+  }
+
   protected abstract Reader doOpenStream() throws IOException;
 
+  public long copyTo(Appendable appendable) throws UncheckedIOException {
+    checkNotNull(appendable);
+    try (Reader reader = doOpenStream()) {
+      return CharStreams.copy(reader, appendable);
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+  
   public long copyTo(CharSink sink) throws UncheckedIOException {
+    checkNotNull(sink);
     try (Reader in = doOpenStream();
         Writer out = sink.doOpenStream()) {
       return CharStreams.copy(in, out);
@@ -97,6 +119,14 @@ public abstract class CharSource {
     @Override
     public String toString() {
       return "CharSource.empty()";
+    }
+  }
+
+  public Stream<String> readLines() throws UncheckedIOException {
+    try (BufferedReader reader = new BufferedReader(openStream())) {
+      return reader.lines().collect(toList()).stream();
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
     }
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Olivier Grégoire <https://github.com/ogregoire>.
+ * Copyright 2015 Olivier Grégoire.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package be.fror.common.resource;
 
-import com.google.common.io.ByteSource;
+import be.fror.common.io.ByteSource;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -25,7 +25,7 @@ import javax.annotation.Nonnull;
 /**
  * Loads resource from {@link ByteSource}.
  *
- * @author Olivier Grégoire &lt;https://github.com/ogregoire&gt;
+ * @author Olivier Grégoire
  * @param <T> The type of the resource being loaded
  */
 public interface ResourceLoader<T> {

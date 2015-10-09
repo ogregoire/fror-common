@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Olivier Grégoire <https://github.com/ogregoire>.
+ * Copyright 2015 Olivier Grégoire.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,22 +15,20 @@
  */
 package be.fror.common.resource;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.base.Throwables.propagate;
-import static com.google.common.io.Resources.asByteSource;
-import static com.google.common.io.Resources.asCharSource;
+import static be.fror.common.base.Preconditions.checkArgument;
+import static be.fror.common.base.Preconditions.checkNotNull;
+import static be.fror.common.base.Preconditions.checkState;
+import static be.fror.common.base.Throwables.propagate;
+import static be.fror.common.io.Resources.asByteSource;
+import static be.fror.common.io.Resources.asCharSource;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.Files.isDirectory;
+import static java.util.Arrays.asList;
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toList;
 
 import com.google.common.base.CharMatcher;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.io.LineProcessor;
 import com.google.common.reflect.ClassPath;
 
 import java.io.IOException;
@@ -40,29 +38,33 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.jar.JarFile;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.annotation.concurrent.ThreadSafe;
 
 /**
  *
- * @author Olivier Grégoire &lt;https://github.com/ogregoire&gt;
+ * @author Olivier Grégoire
  */
 @ThreadSafe
 public final class ResourceLocator {
-  
+
   // Notes:
   // * http://docs.spring.io/spring/docs/current/spring-framework-reference/html/resources.html
-  
-
-  private static final ImmutableSet<String> supportedProtocols = ImmutableSet.of("file", "jar");
+  private static final Set<String> supportedProtocols = Collections.unmodifiableSet(new LinkedHashSet<>(asList("file", "jar")));
 
   private final ImmutableMultimap<ClassLoader, ClassPath.ResourceInfo> resources;
 
@@ -174,53 +176,40 @@ public final class ResourceLocator {
   private static final String SERVICE_PREFIX = "META-INF/services/";
 
   public <T> Stream<Class<? extends T>> getServices(Class<T> service) {
-    return getImplementationNames(service.getName()).entries().stream()
-        .map((e) -> toClass(e.getValue(), service, e.getKey()));
+    return getImplementationNames(service.getName()).entrySet().stream()
+        .flatMap(e -> toClasses(e, service));
   }
 
-  private ImmutableMultimap<ClassLoader, String> getImplementationNames(String serviceName) {
+  private Map<ClassLoader, List<String>> getImplementationNames(String serviceName) {
     final String resourceName = SERVICE_PREFIX + serviceName;
-    ImmutableMultimap.Builder<ClassLoader, String> implementationNames = ImmutableMultimap.builder();
-    this.resources.keySet().stream().forEach((classLoader) -> {
+    Map<ClassLoader, List<String>> implementationNames = new LinkedHashMap<>();
+    resources.asMap().keySet().stream().forEach((classLoader) -> {
       URL url = classLoader.getResource(resourceName);
       if (url != null) {
-        implementationNames.putAll(classLoader, urlToServiceNames(url));
+        implementationNames.computeIfAbsent(classLoader, (cl) -> new ArrayList<>()).addAll(urlToServiceNames(url));
       }
     });
-    return implementationNames.build();
+    return implementationNames;
   }
 
-  private static ImmutableList<String> urlToServiceNames(URL url) {
-    try {
-      // ServiceLoader's doc says that the service provider file is UTF-8-encoded.
-      return asCharSource(url, UTF_8)
-          .readLines(new ServiceProviderProcessor());
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
+  private static List<String> urlToServiceNames(URL url) {
+    // ServiceLoader's doc says that the service provider file is UTF-8-encoded.
+    return asCharSource(url, UTF_8).readLines()
+        .map(ResourceLocator::removeCommentAndTrim)
+        .filter(s -> !s.isEmpty())
+        .collect(Collectors.toList());
   }
 
-  private static class ServiceProviderProcessor implements LineProcessor<ImmutableList<String>> {
-
-    private final ImmutableList.Builder<String> serviceResourceNames = ImmutableList.builder();
-
-    @Override
-    public boolean processLine(String line) throws IOException {
-      int numberPos = line.indexOf('#');
-      if (numberPos >= 0) {
-        line = line.substring(0, numberPos);
-      }
-      line = line.trim();
-      if (!line.isEmpty()) {
-        serviceResourceNames.add(line);
-      }
-      return true;
+  private static String removeCommentAndTrim(String line) {
+    int sharpPos = line.indexOf('#');
+    if (sharpPos >= 0) {
+      line = line.substring(0, sharpPos);
     }
+    return line.trim();
+  }
 
-    @Override
-    public ImmutableList<String> getResult() {
-      return serviceResourceNames.build();
-    }
+  private static <T> Stream<Class<? extends T>> toClasses(Map.Entry<ClassLoader, List<String>> entry, Class<T> service) {
+    return entry.getValue().stream().map(value -> toClass(value, service, entry.getKey()));
   }
 
   private static <T> Class<? extends T> toClass(String name, Class<T> service, ClassLoader loader) {

@@ -15,9 +15,8 @@
  */
 package be.fror.common.random;
 
+import static be.fror.common.base.Preconditions.checkArgument;
 import static java.lang.Math.max;
-
-import com.google.common.base.Preconditions;
 
 import java.util.Random;
 
@@ -62,7 +61,7 @@ public final class MersenneTwister extends Random {
   }
 
   public synchronized void setSeed(int[] seed) {
-    Preconditions.checkArgument(seed.length != 0);
+    checkArgument(seed.length != 0);
     setSeed(0x12bd6aaL);
     int i = 1;
     for (int seedIndex = 0, k = max(N, seed.length); k != 0; k--) {
