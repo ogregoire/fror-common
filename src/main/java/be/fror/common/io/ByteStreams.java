@@ -15,7 +15,10 @@
  */
 package be.fror.common.io;
 
+import static be.fror.common.base.Preconditions.checkNotNull;
+
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -24,7 +27,7 @@ import java.io.OutputStream;
  *
  * @author Olivier Grégoire
  */
-class ByteStreams {
+public final class ByteStreams {
 
   private static final int BUFFER_SIZE = 8192;
 
@@ -51,4 +54,34 @@ class ByteStreams {
     return out.toByteArray();
   }
 
+  public static byte[] readFully(InputStream in, byte[] bytes) throws IOException {
+    return readFully(in, bytes, 0, bytes.length);
+  }
+
+  public static byte[] readFully(InputStream in, byte[] bytes, int off, int len) throws IOException {
+    int read = read(in, bytes, off, len);
+    if (read != len) {
+      String message = String.format("reached end of stream after reading %d bytes; %d bytes expected", read, len);
+      throw new EOFException(message);
+    }
+    return bytes;
+  }
+
+  public static int read(InputStream in, byte[] bytes, int off, int len)
+      throws IOException {
+    checkNotNull(in);
+    checkNotNull(bytes);
+    if (len < 0) {
+      throw new IndexOutOfBoundsException("len is negative");
+    }
+    int total = 0;
+    while (total < len) {
+      int result = in.read(bytes, off + total, len - total);
+      if (result == -1) {
+        break;
+      }
+      total += result;
+    }
+    return total;
+  }
 }
